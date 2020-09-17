@@ -1,2 +1,2 @@
 # asmgraph
-Converts assembly to a graph using clojure. 
+Converts assembly to a graph of operations. Written in Scala. 
