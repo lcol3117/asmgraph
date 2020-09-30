@@ -1,5 +1,8 @@
 import scala.language.postfixOps
 
+object Main {
+def main(args: Array[String]): Unit = {
+
 type AsmOp = String
 type AsmSym = String
 
@@ -93,3 +96,5 @@ val myReader = new StdAsmReader("xlatb eax, ebx\nsyscall") with EAsm
 
 println(myReader.read)
 
+}
+}
