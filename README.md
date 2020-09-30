@@ -10,3 +10,5 @@ Project Progress:
  - [X] Parse Assembly as data
  - [ ] Convert data to opdict
  - [ ] Process opdict to get graph
+
+![Scala CI](https://github.com/fnreality/asmgraph/workflows/Scala%20CI/badge.svg)
