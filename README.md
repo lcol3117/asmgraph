@@ -5,8 +5,8 @@ Converts assembly to a graph of operations. Written in Scala.
 
 Project Progress:
 
- - [ ] Clean up assembly
- - [ ] Use EAsm to make assembly easier to parse
- - [ ] Parse Assembly as data
+ - [X] Clean up assembly
+ - [X] Use EAsm to make assembly easier to parse
+ - [X] Parse Assembly as data
  - [ ] Convert data to opdict
  - [ ] Process opdict to get graph
