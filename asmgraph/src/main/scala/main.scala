@@ -3,11 +3,10 @@ import scala.language.postfixOps
 object Main {
 def main(args: Array[String]): Unit = {
 
-type AsmOp = String
 type AsmSym = String
 
-case class AsmLine(op: AsmOp, gen: AsmSym, uses: List[AsmSym]) {
-  def replaceOp(oldOp: AsmOp, newOp: AsmOp): AsmLine =
+case class AsmLine(op: AsmSym, gen: AsmSym, uses: List[AsmSym]) {
+  def replaceOp(oldOp: AsmSym, newOp: AsmSym): AsmLine =
     if (op == oldOp) AsmLine(newOp, gen, uses) else this
   def replaceGen(oldGen: AsmSym, newGen: AsmSym): AsmLine =
     if (gen == oldGen) AsmLine(op, newGen, uses) else this
