@@ -16,6 +16,7 @@ defmodule AsmGraph do
         |> String.split("\n")
         |> Enum.filter(&(&1 != ""))
         |> Enum.map(&AsmLine.fromString/1)
+        |> Enum.map(&op_shift/1)
         |> Enum.with_index(1)
         |> Enum.map(fn {line, index} ->
             %{line | gen: {line[:gen], index}}
@@ -28,6 +29,18 @@ defmodule AsmGraph do
         new_uses = Enum.map(uses, &({&1, gen_map[&1] <~ 0}))
         new_line = %{op: op, gen: {gen_v, gen_i}, uses: new_uses}
         {[new_line | acc], Map.put(gen_map, gen_v, gen_i)}
+    end
+    def op_shift(line) do
+        shifts = [
+            {"xlatb", "xlat"}
+        ]
+        Enum.reduce(shifts, line, fn {from, to}, line ->
+            if line[:op] == from do
+                %{line | op: to}
+            else
+                line
+            end
+        end)
     end
     def nilable <~ alt do
         if nilable == nil do
@@ -43,6 +56,8 @@ IO.inspect(
     mov eax, ebx; this is a comment
     mov ebx, ecx
     inc eax
+    xlatb eax
+    xlat eax
     sub ecx, eax
     syscall
     """
