@@ -11,7 +11,7 @@ end
 defmodule AsmGraph do
     def graph(asm) do
         basic_repr = asm
-        		|> String.replace("syscall", "int 0x80")
+        		|> String.replace("syscall", "int 0x80, eax, ebx, ecx, edx")
         		|> String.replace(~r/;.*\n/, "\n")
         		|> String.split("\n")
         		|> Enum.filter(&(&1 != ""))
@@ -92,13 +92,6 @@ defmodule AsmGraph do
                 line
             end
         end)
-    end
-    def nilable <~ alt do
-        if nilable == nil do
-            alt
-        else
-            nilable
-        end
     end
 end
 
