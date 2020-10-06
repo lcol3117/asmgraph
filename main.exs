@@ -32,7 +32,36 @@ defmodule AsmGraph do
     end
     def op_shift(line) do
         shifts = [
-            {"xlatb", "xlat"}
+            {"jz", "je"},
+            {"jnz", "jne"},
+            {"iretd", "iret"},
+            {"jnbe", "ja"},
+            {"jnb", "jae"},
+            {"jnae", "jb"},
+            {"jna", "jbe"},
+            {"jecxz", "jcxz"},
+            {"jnle", "jg"},
+            {"jnl", "jge"},
+            {"jnge", "jl"},
+            {"jng", "jle"},
+            {"jnp", "jpo"},
+            {"jp", "jpe"},
+            {"loopz", "loope"},
+            {"loopnz", "loopne"},
+            {"popad", "popa"},
+            {"popfd", "popf"},
+            {"pushad", "pusha"},
+            {"pushfd", "pushf"},
+            {"repz", "repe"},
+            {"repnz", "repne"},
+            {"retf", "ret"},
+            {"shl", "sal"},
+            {"setnbe", "seta"},
+            {"setnb", "setae"},
+            {"setnae", "setb"},
+            {"setna", "setbe"},
+            {"setz", "sete"},
+            {"setnz", "setne"}
         ]
         Enum.reduce(shifts, line, fn {from, to}, line ->
             if line[:op] == from do
