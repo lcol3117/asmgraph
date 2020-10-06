@@ -8,5 +8,6 @@ Project Progress:
  - [X] Use EAsm to make assembly easier to parse
  - [X] Operator shifting
  - [X] Parse Assembly as data
- - [X] Convert data to linked facts
+ - [X] Convert data to facts
+ - [X] Link facts
  - [ ] Graph

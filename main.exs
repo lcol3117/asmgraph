@@ -10,23 +10,36 @@ end
 
 defmodule AsmGraph do
     def graph(asm) do
-        asm
-        |> String.replace("syscall", "int 0x80")
-        |> String.replace(~r/;.*\n/, "\n")
-        |> String.split("\n")
-        |> Enum.filter(&(&1 != ""))
-        |> Enum.map(&AsmLine.fromString/1)
-        |> Enum.map(&op_shift/1)
-        |> Enum.with_index(1)
-        |> Enum.map(fn {line, index} ->
-            %{line | gen: {line[:gen], index}}
-        end)
-        |> Enum.reduce({[], %{}}, &factify_uses/2)
-        |> elem(0)
-        |> Enum.reverse
+        basic_repr = asm
+        		|> String.replace("syscall", "int 0x80")
+        		|> String.replace(~r/;.*\n/, "\n")
+        		|> String.split("\n")
+        		|> Enum.filter(&(&1 != ""))
+			|> Enum.map(&String.trim/1)
+        		|> Enum.map(&AsmLine.fromString/1)
+        		|> Enum.map(&op_shift/1)
+        		|> Enum.with_index(1)
+        		|> Enum.map(fn {line, index} ->
+        		    %{line | gen: {line[:gen], index}}
+        		end)
+        		|> Enum.reduce({[], %{}}, &factify_uses/2)
+        		|> elem(0)
+        		|> Enum.reverse
+        op_map = basic_repr
+			|> Enum.map(fn %{op: op, gen: gen} -> {gen, op} end)
+			|> Map.new
+	basic_repr
+        	|> Enum.map(&line_paths(&1, op_map))
+		|> Enum.filter(fn {_, targets} -> targets != [] end)
+    end
+    def line_paths(%{op: op, uses: uses}, op_map) do
+        targets = uses
+		    |> Enum.map(&(Map.get(op_map, &1)))
+		    |> Enum.filter(&(&1 != nil))
+	{op, targets}
     end
     def factify_uses(%{op: op, gen: {gen_v, gen_i}, uses: uses}, {acc, gen_map}) do
-        new_uses = Enum.map(uses, &({&1, gen_map[&1] <~ 0}))
+        new_uses = Enum.map(uses, &({&1, Map.get(gen_map, &1, 0)}))
         new_line = %{op: op, gen: {gen_v, gen_i}, uses: new_uses}
         {[new_line | acc], Map.put(gen_map, gen_v, gen_i)}
     end
@@ -91,12 +104,10 @@ end
 
 IO.inspect(
     AsmGraph.graph """
-    mov eax, ebx; this is a comment
-    mov ebx, ecx
-    inc eax
+    dec ecx ; this is a comment
+    sub ebx, ecx
     xlatb eax
-    xlat eax
-    sub ecx, eax
+    imul ecx, eax
     syscall
     """
 )
