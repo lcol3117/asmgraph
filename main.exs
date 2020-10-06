@@ -4,7 +4,7 @@ defmodule AsmLine do
         [gen | uses] = args
                         |> Enum.join("")
                         |> String.split(",")
-        %{op: op, gen: gen, uses: uses}
+        %{op: op, gen: gen, uses: [gen | uses]}
     end
 end
 
@@ -14,7 +14,7 @@ defmodule AsmGraph do
         		|> String.replace("syscall", "int 0x80, eax, ebx, ecx, edx")
         		|> String.replace(~r/;.*\n/, "\n")
         		|> String.split("\n")
-        		|> Enum.filter(&(&1 != ""))
+        		|> Enum.filter(& &1 != "")
 			|> Enum.map(&String.trim/1)
         		|> Enum.map(&AsmLine.fromString/1)
         		|> Enum.map(&op_shift/1)
@@ -25,21 +25,63 @@ defmodule AsmGraph do
         		|> Enum.reduce({[], %{}}, &factify_uses/2)
         		|> elem(0)
         		|> Enum.reverse
-        op_map = basic_repr
-			|> Enum.map(fn %{op: op, gen: gen} -> {gen, op} end)
-			|> Map.new
-	basic_repr
-        	|> Enum.map(&line_paths(&1, op_map))
+	shifted_repr = basic_repr
+			|> Enum.filter(fn %{op: op} -> op == "mov" end)
+			|> Enum.map(fn %{gen: gen, uses: [_, use]} -> {gen, use} end)
+			|> Enum.reduce(basic_repr, &mov_shifting/2)
+			|> Enum.filter(fn %{op: op} -> op != "mov" end)
+	op_map = shifted_repr
+			    |> Enum.map(fn %{op: op, gen: gen} -> {gen, op} end)
+			    |> Map.new
+	shifted_repr
+		|> Enum.filter(fn %{op: op} -> op != "mov" end)
+		|> Enum.map(&line_paths(&1, op_map))
 		|> Enum.filter(fn {_, targets, _} -> targets != [] end)
+		|> Enum.map(fn {source, targets, {reg, _}} -> {
+		    source,
+		    Enum.uniq(targets),
+		    reg |> reg_class |> elem(0),
+		    reg |> reg_class |> elem(1)
+		} end)
+		|> Enum.uniq
     end
-    def line_paths(%{op: op, gen: {gen, _}, uses: uses}, op_map) do
+    def reg_class(reg) do
+	instr_regs = [
+	    "eax", "al", "ah",
+	    "ebx", "bl", "bh",
+	    "ecx", "cl", "ch",
+	    "edx", "dl", "dh"
+	]
+	std_class = cond do
+	    reg == "ebp"		 		-> 1
+	    reg == "esp"				-> 1
+	    Enum.member?(instr_regs, reg) 		-> 2
+	    String.match?(reg, ~r/^0x.*$/) 		-> 3
+	    String.match?(reg, ~r/^[[:digit:]]+/)	-> 4
+	    true 					-> 5
+	end
+	deref_count = reg
+			|> String.graphemes
+			|> Enum.count(& &1 == "[")
+	{std_class, deref_count}
+    end
+    def line_paths(%{op: op, gen: gen, uses: uses}, op_map) do
         targets = uses
 		    |> Enum.map(&(Map.get(op_map, &1)))
-		    |> Enum.filter(&(&1 != nil))
+		    |> Enum.filter(& &1 != nil)
 	{op, targets, gen}
     end
+    def mov_shifting({from, to}, basic_repr) do
+	Enum.map(basic_repr, & %{&1 | uses: Enum.map(&1[:uses], fn x ->
+	    if x == from do
+		to
+	    else
+		x
+	    end
+	end)})
+    end
     def factify_uses(%{op: op, gen: {gen_v, gen_i}, uses: uses}, {acc, gen_map}) do
-        new_uses = Enum.map(uses, &({&1, Map.get(gen_map, &1, 0)}))
+        new_uses = Enum.map(uses, & {&1, Map.get(gen_map, &1, 0)})
         new_line = %{op: op, gen: {gen_v, gen_i}, uses: new_uses}
         {[new_line | acc], Map.put(gen_map, gen_v, gen_i)}
     end
@@ -100,7 +142,8 @@ IO.inspect(
     dec ecx ; this is a comment
     sub ebx, ecx
     xlatb eax
-    imul ecx, eax
+    mov edx, eax
+    imul ecx, edx
     syscall
     """
 )

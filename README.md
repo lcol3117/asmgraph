@@ -10,7 +10,8 @@ Project Progress:
  - [X] Parse Assembly as data
  - [X] Convert data to facts
  - [X] Link facts
- - [ ] Handle Moves
+ - [X] Handle Moves
+ - [X] Get Class Information
  - [X] Graph
  - [ ] Make Adjacency Matrix
- 
+
