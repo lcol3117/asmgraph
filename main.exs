@@ -44,8 +44,8 @@ defmodule AsmGraph do
             {"jnl", "jge"},
             {"jnge", "jl"},
             {"jng", "jle"},
-            {"jnp", "jpo"},
             {"jp", "jpe"},
+            {"jnp", "jpo"},
             {"loopz", "loope"},
             {"loopnz", "loopne"},
             {"popad", "popa"},
@@ -61,7 +61,16 @@ defmodule AsmGraph do
             {"setnae", "setb"},
             {"setna", "setbe"},
             {"setz", "sete"},
-            {"setnz", "setne"}
+            {"setnz", "setne"},
+            {"setnge", "setl"},
+            {"setng", "setle"},
+            {"setnle", "setg"},
+            {"setnl", "setge"},
+            {"setp", "setpe"},
+            {"setnp", "setpo"},
+            {"shld", "shrd"},
+            {"fwait", "wait"},
+            {"xlatb", "xlat"}
         ]
         Enum.reduce(shifts, line, fn {from, to}, line ->
             if line[:op] == from do
