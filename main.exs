@@ -30,13 +30,13 @@ defmodule AsmGraph do
 			|> Map.new
 	basic_repr
         	|> Enum.map(&line_paths(&1, op_map))
-		|> Enum.filter(fn {_, targets} -> targets != [] end)
+		|> Enum.filter(fn {_, targets, _} -> targets != [] end)
     end
-    def line_paths(%{op: op, uses: uses}, op_map) do
+    def line_paths(%{op: op, gen: {gen, _}, uses: uses}, op_map) do
         targets = uses
 		    |> Enum.map(&(Map.get(op_map, &1)))
 		    |> Enum.filter(&(&1 != nil))
-	{op, targets}
+	{op, targets, gen}
     end
     def factify_uses(%{op: op, gen: {gen_v, gen_i}, uses: uses}, {acc, gen_map}) do
         new_uses = Enum.map(uses, &({&1, Map.get(gen_map, &1, 0)}))
