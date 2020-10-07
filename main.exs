@@ -12,7 +12,7 @@ defmodule AsmGraph do
     def graph(asm) do
         basic_repr = asm
         		|> String.replace("syscall", "int 0x80, eax, ebx, ecx, edx")
-        		|> String.replace(~r/;.*\n/, "\n")
+        		|> String.replace(~r<;.*\n>, "\n")
         		|> String.split("\n")
         		|> Enum.filter(& &1 != "")
 			|> Enum.map(&String.trim/1)
@@ -59,12 +59,12 @@ defmodule AsmGraph do
 	    "edx", "dl", "dh"
 	]
 	std_class = cond do
-	    reg == "ebp"		 		-> 1
-	    reg == "esp"				-> 1
-	    Enum.member?(instr_regs, reg) 		-> 2
-	    String.match?(reg, ~r/^0x.*$/) 		-> 3
-	    String.match?(reg, ~r/^[[:digit:]]+/)	-> 4
-	    true 					-> 5
+	    reg == "ebp"	 		-> 1
+	    reg == "esp"			-> 1
+	    Enum.member?(instr_regs, reg) 	-> 2
+	    reg =~ ~r<^0x.*$> 			-> 3
+	    reg =~ ~r<^[[:digit:]]+>		-> 4
+	    true 				-> 5
 	end
 	deref_count = reg
 			|> String.graphemes
@@ -73,7 +73,7 @@ defmodule AsmGraph do
     end
     def line_paths(%{op: op, gen: gen, uses: uses}, op_map) do
         targets = uses
-		    |> Enum.map(&(Map.get(op_map, &1)))
+		    |> Enum.map(&Map.get(op_map, &1))
 		    |> Enum.filter(& &1 != nil)
 	{op, targets, gen}
     end
