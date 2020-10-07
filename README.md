@@ -1,9 +1,9 @@
 # asmgraph
 Converts assembly to a graph of operations. Written in Elixir. 
 
-***Currently Under Development***
+`AsmGraph.graph(asm_string)` -> `[{link_from, link_to, link_class}]`
 
-Project Progress:
+Steps:
 
  - [X] Use EAsm to make assembly easier to parse
  - [X] Operator shifting
@@ -13,5 +13,5 @@ Project Progress:
  - [X] Handle Moves
  - [X] Get Class Information
  - [X] Graph
- - [ ] Make Adjacency Matrix
+ - [X] Make Numeric
 

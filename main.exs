@@ -40,10 +40,16 @@ defmodule AsmGraph do
 		|> Enum.map(fn {source, targets, {reg, _}} -> {
 		    source,
 		    Enum.uniq(targets),
-		    reg |> reg_class |> elem(0),
-		    reg |> reg_class |> elem(1)
+		    reg_class(reg)
 		} end)
 		|> Enum.uniq
+		|> Enum.flat_map(fn {source, targets, class} ->
+		    Enum.map(targets, & {
+			:binary.decode_unsigned(source),
+			:binary.decode_unsigned(&1),
+			class
+		    })
+		end)
     end
     def reg_class(reg) do
 	instr_regs = [
@@ -63,7 +69,7 @@ defmodule AsmGraph do
 	deref_count = reg
 			|> String.graphemes
 			|> Enum.count(& &1 == "[")
-	{std_class, deref_count}
+	std_class + (deref_count * 6)
     end
     def line_paths(%{op: op, gen: gen, uses: uses}, op_map) do
         targets = uses
