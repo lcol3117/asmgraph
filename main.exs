@@ -44,6 +44,7 @@ defmodule AsmGraph do
 		    reg_class(reg)
 		} end)
 		|> Enum.uniq
+		|> IO.inspect
 		|> Enum.flat_map(fn {source, targets, class} ->
 		    Enum.map(targets, & {
 			:binary.decode_unsigned(source),
