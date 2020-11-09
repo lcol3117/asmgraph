@@ -46,17 +46,14 @@ defmodule AsmGraph do
 		|> Enum.uniq
 		|> Enum.flat_map(fn {source, targets, class} ->
 		    Enum.map(targets, & {
-			opcode_index(source, opcodes),
-			opcode_index(&1, opcodes),
+			opcodes[source],
+			opcodes[&1],
 			class
 		    })
 		end)
 		|> Enum.map(fn {source, target, class} ->
 		    {{source, target}, class}
 		end)
-    end
-    def opcode_index(opcode, opcodes) do
-    	(opcodes[opcode] + 1) || 0
     end
     def reg_class(reg) do
 	instr_regs = [
