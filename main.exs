@@ -13,7 +13,7 @@ end
 defmodule AsmGraph do
     def graph_adj(asm, opcodes) do
     	num_opcodes = map_size opcodes
-	num_init_dims = :math.pow(num_opcodes, 2) + num_opcodes
+	num_init_dims = (num_opcodes * num_opcodes) + num_opcodes
     	s_graphed = graph asm, opcodes
 	s_graphed
 		|> Enum.map(fn {{source, target}, class} ->
