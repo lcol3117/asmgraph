@@ -11,6 +11,21 @@ defmodule AsmLine do
 end
 
 defmodule AsmGraph do
+    def graph_adj(asm, opcodes) do
+    	num_opcodes = map_size opcodes
+	num_init_dims = :math.pow(num_opcodes, 2) + num_opcodes
+    	s_graphed = graph asm, opcodes
+	s_graphed
+		|> Enum.map(fn {{source, target}, class} ->
+			{(num_opcodes * source) + target, class}
+		end)
+		|> Enum.map(fn {init_dim, {class_num, deref_count, sysl} -> [
+			{init_dim + (num_init_dims * 0), class_num},
+			{init_dim + (num_init_dims * 1), class_num},
+			{init_dim + (num_init_dims * 2), class_num}
+		] end)
+		|> Enum.flat_map(&Function.identity/1)
+    end
     def graph(asm, opcodes) do
         basic_repr = asm
         		|> String.replace("syscall", "int 0x80, eax, ebx, ecx, edx")
