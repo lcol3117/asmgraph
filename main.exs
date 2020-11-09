@@ -1,6 +1,8 @@
 defmodule AsmLine do
-    def fromString(text) do
-        [op | args] = String.split(text, " ")
+    def fromString(raw_text) do
+        [op | args] = text
+			|> String.downcase
+			|> String.split(" ")
         [gen | uses] = args
                         |> Enum.join("")
                         |> String.split(",")
