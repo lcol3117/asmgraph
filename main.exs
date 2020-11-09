@@ -49,7 +49,7 @@ defmodule AsmGraph do
 		|> Enum.flat_map(fn {source, targets, class} ->
 		    Enum.map(targets, & {
 			opcode_index(source, opcodes),
-			opcodes_index(&1, opcodes),
+			opcode_index(&1, opcodes),
 			class
 		    })
 		end)
