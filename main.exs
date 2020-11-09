@@ -76,7 +76,7 @@ defmodule AsmGraph do
 	deref_count = reg
 			|> String.graphemes
 			|> Enum.count(& &1 == "[")
-	repr_num = std_class + (deref_count * 9)
+	repr_num = base_class + (deref_count * 9)
 	{repr_num, spec1 &&1||0, spec2 &&1||0, spec3&&1||0, deref_count, base_class}
     end
     def line_paths(%{op: op, gen: gen, uses: uses}, op_map) do
