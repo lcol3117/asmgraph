@@ -161,7 +161,6 @@ opcodes =
 	opcodes_txt
 		|> String.split("\n")
 		|> Enum.with_index
-		|> Enum.map(fn {a, b} -> {b, a} end)
 		|> Map.new
     else
     	{:error, :enoent} -> raise "Cannot find opcodes.txt (enoent)"
