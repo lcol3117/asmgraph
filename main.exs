@@ -169,6 +169,8 @@ opcodes =
 	other -> raise "Unable to read opcodes.txt, invalid return #{inspect other}"
     end
 
+IO.inspect opcodes
+
 IO.inspect(
     AsmGraph.graph """
     dec ecx ; this is a comment
