@@ -161,7 +161,7 @@ IO.inspect(
     dec ecx ; this is a comment
     sub ebx, ecx
     xlatb eax
-    mov edx, eax
+    movzx edx, eax
     imul ecx, edx
     syscall
     """
