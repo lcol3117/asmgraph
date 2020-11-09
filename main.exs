@@ -20,9 +20,9 @@ defmodule AsmGraph do
 			{(num_opcodes * source) + target, class}
 		end)
 		|> Enum.map(fn {init_dim, {class_num, deref_count, sysl}} -> [
-			{init_dim + (num_init_dims * 0), class_num},
-			{init_dim + (num_init_dims * 1), class_num},
-			{init_dim + (num_init_dims * 2), class_num}
+			{init_dim, class_num},
+			{init_dim + num_init_dims, deref_count},
+			{init_dim + (num_init_dims * 2), sysl}
 		] end)
 		|> Enum.flat_map(&Function.identity/1)
     end
@@ -189,7 +189,7 @@ opcodes =
     end
 
 IO.inspect(
-    AsmGraph.graph """
+    AsmGraph.graph_adj """
     dec ecx ; this is a comment
     sub ebx, ecx
     xlatb eax
