@@ -53,23 +53,25 @@ defmodule AsmGraph do
     end
     def reg_class(reg) do
 	instr_regs = [
-	    "eax", "al", "ah",
-	    "ebx", "bl", "bh",
-	    "ecx", "cl", "ch",
-	    "edx", "dl", "dh"
+	    "eax", "ax", "al", "ah",
+	    "ebx", "bx", "bl", "bh",
+	    "ecx", "cx", "cl", "ch",
+	    "edx", "dx", "dl", "dh"
 	]
+	segm_regs = ["cs", "ds", "es", "fs", "gs"]
 	std_class = cond do
-	    reg == "ebp"	 		-> 1
-	    reg == "esp"			-> 1
-	    Enum.member?(instr_regs, reg) 	-> 2
-	    reg =~ ~r<^0x.*$> 			-> 3
-	    reg =~ ~r<^[[:digit:]]+>		-> 4
-	    true 				-> 5
+	    reg == "eip"			-> 1
+	    Enum.member?(segm_regs, reg)	-> 2
+	    (reg == "ebp" or reg == "esp")	-> 3
+	    Enum.member?(instr_regs, reg) 	-> 4
+	    reg =~ ~r<^0x.*$> 			-> 5
+	    reg =~ ~r<^[[:digit:]]+>		-> 6
+	    true 				-> 7
 	end
 	deref_count = reg
 			|> String.graphemes
 			|> Enum.count(& &1 == "[")
-	std_class + (deref_count * 6)
+	std_class + (deref_count * 8)
     end
     def line_paths(%{op: op, gen: gen, uses: uses}, op_map) do
         targets = uses
