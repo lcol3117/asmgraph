@@ -19,7 +19,7 @@ defmodule AsmGraph do
 		|> Enum.map(fn {{source, target}, class} ->
 			{(num_opcodes * source) + target, class}
 		end)
-		|> Enum.map(fn {init_dim, {class_num, deref_count, sysl} -> [
+		|> Enum.map(fn {init_dim, {class_num, deref_count, sysl}} -> [
 			{init_dim + (num_init_dims * 0), class_num},
 			{init_dim + (num_init_dims * 1), class_num},
 			{init_dim + (num_init_dims * 2), class_num}
