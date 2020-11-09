@@ -167,7 +167,9 @@ opcodes =
 		|> Enum.map(fn {a, b} -> {b, a} end)
 		|> Map.new
     else
-    	raise "Cannot find opcodes.txt"
+    	{:error, :enoent} -> raise "Cannot find opcodes.txt (enoent)"
+	{:error, reason} -> raise "Unable to read opcodes.txt because #{inspect reason}"
+	other -> raise "Unable to read opcodes.txt, invalid return #{inspect other}"
     end
 
 IO.inspect(
