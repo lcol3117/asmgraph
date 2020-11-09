@@ -44,13 +44,15 @@ defmodule AsmGraph do
 		    reg_class(reg)
 		} end)
 		|> Enum.uniq
-		|> IO.inspect
 		|> Enum.flat_map(fn {source, targets, class} ->
 		    Enum.map(targets, & {
 			:binary.decode_unsigned(source),
 			:binary.decode_unsigned(&1),
 			class
 		    })
+		end)
+		|> Enum.map(fn {source, target, class} ->
+		    {{source, target}, class}
 		end)
     end
     def reg_class(reg) do
@@ -64,21 +66,20 @@ defmodule AsmGraph do
 	    "cs", "ds", "es",
 	    "fs", "gs", "ss"
 	]
-	{base_num, spec1, spec2, spec3} = cond do
-	    reg == "0x80"			-> {1, true, true, true}
-	    reg == "eip"			-> {2, true, true, true}
-	    Enum.member?(segm_regs, reg)	-> {3, false, true, true}
-	    (reg == "ebp" or reg == "esp")	-> {4, false, true, true}
-	    Enum.member?(instr_regs, reg) 	-> {5, false, false, true}
-	    reg =~ ~r<^0x.*$> 			-> {6, false, false, false}
-	    reg =~ ~r<^[[:digit:]]+>		-> {7, false, false, false}
-	    true 				-> {8, false, false, false}
+	{repr_num, sysl} = cond do
+	    reg == "0x80"			-> {1, true}
+	    reg == "eip"			-> {2, true}
+	    Enum.member?(segm_regs, reg)	-> {3, false}
+	    (reg == "ebp" or reg == "esp")	-> {4, false}
+	    Enum.member?(instr_regs, reg) 	-> {5, false}
+	    reg =~ ~r<^0x.*$> 			-> {6, false}
+	    reg =~ ~r<^[[:digit:]]+>		-> {7, false}
+	    true 				-> {8, false}
 	end
 	deref_count = reg
 			|> String.graphemes
 			|> Enum.count(& &1 == "[")
-	repr_num = base_num + (deref_count * 9)
-	{repr_num, spec1 &&1||0, spec2 &&1||0, spec3 &&1||0, deref_count, base_num}
+	{repr_num, deref_count, sysl &&1||0}
     end
     def line_paths(%{op: op, gen: gen, uses: uses}, op_map) do
         targets = uses
