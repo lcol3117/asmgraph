@@ -9,7 +9,7 @@ defmodule AsmLine do
 end
 
 defmodule AsmGraph do
-    def graph(asm) do
+    def graph(asm, opcodes) do
         basic_repr = asm
         		|> String.replace("syscall", "int 0x80, eax, ebx, ecx, edx")
 			|> String.replace("sysenter", "int 0x80, eax, ebx, ecx, edx")
@@ -46,14 +46,17 @@ defmodule AsmGraph do
 		|> Enum.uniq
 		|> Enum.flat_map(fn {source, targets, class} ->
 		    Enum.map(targets, & {
-			:binary.decode_unsigned(source),
-			:binary.decode_unsigned(&1),
+			opcode_index(source, opcodes),
+			opcode_index(&1, opcodes),
 			class
 		    })
 		end)
 		|> Enum.map(fn {source, target, class} ->
 		    {{source, target}, class}
 		end)
+    end
+    def opcode_index(opcode, opcodes) do
+    	(opcodes[opcode] + 1) || 0
     end
     def reg_class(reg) do
 	instr_regs = [
@@ -156,6 +159,17 @@ defmodule AsmGraph do
     end
 end
 
+opcodes =
+    with {:ok, opcodes_txt} <- File.read("opcodes.txt") do
+	opcodes_txt
+		|> String.split("\n")
+		|> Enum.with_index
+		|> Enum.map(fn {a, b} -> {b, a} end)
+		|> Map.new
+    else
+    	raise "Cannot find opcodes.txt"
+    end
+
 IO.inspect(
     AsmGraph.graph """
     dec ecx ; this is a comment
@@ -164,5 +178,5 @@ IO.inspect(
     movzx edx, eax
     imul ecx, edx
     syscall
-    """
+    """, opcodes
 )
