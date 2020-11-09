@@ -1,5 +1,5 @@
 defmodule AsmLine do
-    def fromString(raw_text) do
+    def fromString(text) do
         [op | args] = text
 			|> String.downcase
 			|> String.split(" ")
