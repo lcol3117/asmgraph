@@ -26,10 +26,10 @@ defmodule AsmGraph do
         		|> elem(0)
         		|> Enum.reverse
 	shifted_repr = basic_repr
-			|> Enum.filter(fn %{op: op} -> op == "mov" end)
+			|> Enum.filter(fn %{op: op} -> mov_like(op) end)
 			|> Enum.map(fn %{gen: gen, uses: [_, use]} -> {gen, use} end)
 			|> Enum.reduce(basic_repr, &mov_shifting/2)
-			|> Enum.filter(fn %{op: op} -> op != "mov" end)
+			|> Enum.filter(fn %{op: op} -> not mov_like(op) end)
 	op_map = shifted_repr
 			    |> Enum.map(fn %{op: op, gen: gen} -> {gen, op} end)
 			    |> Map.new
@@ -78,6 +78,9 @@ defmodule AsmGraph do
 		    |> Enum.map(&Map.get(op_map, &1))
 		    |> Enum.filter(& &1 != nil)
 	{op, targets, gen}
+    end
+    def mov_like(op) do
+    	String.contains?(op, "mov") or (op == "lea")
     end
     def mov_shifting({from, to}, basic_repr) do
 	Enum.map(basic_repr, & %{&1 | uses: Enum.map(&1[:uses], fn x ->
