@@ -12,6 +12,7 @@ defmodule AsmGraph do
     def graph(asm) do
         basic_repr = asm
         		|> String.replace("syscall", "int 0x80, eax, ebx, ecx, edx")
+			|> String.replace("sysenter", "int 0x80, eax, ebx, ecx, edx")
         		|> String.replace(~r<;.*\n>, "\n")
         		|> String.split("\n")
         		|> Enum.filter(& &1 != "")
