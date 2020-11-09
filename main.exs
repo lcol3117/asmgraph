@@ -59,20 +59,25 @@ defmodule AsmGraph do
 	    "ecx", "cx", "cl", "ch",
 	    "edx", "dx", "dl", "dh"
 	]
-	segm_regs = ["cs", "ds", "es", "fs", "gs"]
-	std_class = cond do
-	    reg == "eip"			-> 1
-	    Enum.member?(segm_regs, reg)	-> 2
-	    (reg == "ebp" or reg == "esp")	-> 3
-	    Enum.member?(instr_regs, reg) 	-> 4
-	    reg =~ ~r<^0x.*$> 			-> 5
-	    reg =~ ~r<^[[:digit:]]+>		-> 6
-	    true 				-> 7
+	segm_regs = [
+	    "cs", "ds", "es",
+	    "fs", "gs", "ss"
+	]
+	{base_num, spec1, spec2, spec3} = cond do
+	    reg == "0x80"			-> {1, true, true, true}
+	    reg == "eip"			-> {2, true, true, true}
+	    Enum.member?(segm_regs, reg)	-> {3, false, true, true}
+	    (reg == "ebp" or reg == "esp")	-> {4, false, true, true}
+	    Enum.member?(instr_regs, reg) 	-> {5, false, false, true}
+	    reg =~ ~r<^0x.*$> 			-> {6, false, false, false}
+	    reg =~ ~r<^[[:digit:]]+>		-> {7, false, false, false}
+	    true 				-> {8, false, false, false}
 	end
 	deref_count = reg
 			|> String.graphemes
 			|> Enum.count(& &1 == "[")
-	std_class + (deref_count * 8)
+	repr_num = std_class + (deref_count * 9)
+	{repr_num, spec1 &&1||0, spec2 &&1||0, spec3&&1||0, deref_count, base_class}
     end
     def line_paths(%{op: op, gen: gen, uses: uses}, op_map) do
         targets = uses
