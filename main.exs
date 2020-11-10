@@ -86,20 +86,23 @@ defmodule AsmGraph do
 	    "cs", "ds", "es",
 	    "fs", "gs", "ss"
 	]
+	instr_ptr = [
+	    "ip", "eip", "rip"
+	]
 	{repr_num, sysl} = cond do
-	    reg == "0x80"			-> {1, true}
-	    reg == "eip"			-> {2, true}
-	    Enum.member?(segm_regs, reg)	-> {3, false}
-	    (reg == "ebp" or reg == "esp")	-> {4, false}
-	    Enum.member?(instr_regs, reg) 	-> {5, false}
-	    reg =~ ~r<^0x.*$> 			-> {6, false}
-	    reg =~ ~r<^[[:digit:]]+>		-> {7, false}
-	    true 				-> {8, false}
+	    reg == "0x80"			-> -2
+	    Enum.member?(instr_ptr, reg)	-> -1
+	    Enum.member?(segm_regs, reg)	-> 1
+	    (reg == "ebp" or reg == "esp")	-> 2
+	    Enum.member?(instr_regs, reg) 	-> 3
+	    reg =~ ~r<^0x.*$> 			-> 4
+	    reg =~ ~r<^[[:digit:]]+>		-> 5
+	    true 				-> 6
 	end
 	deref_count = reg
 			|> String.graphemes
 			|> Enum.count(& &1 == "[")
-	{repr_num, deref_count, sysl &&1||0}
+	repr_num + (deref_count * 7)
     end
     def line_paths(%{op: op, gen: gen, uses: uses}, op_map) do
         targets = uses
