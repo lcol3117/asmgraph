@@ -89,7 +89,7 @@ defmodule AsmGraph do
 	instr_ptr = [
 	    "ip", "eip", "rip"
 	]
-	{repr_num, sysl} = cond do
+	repr_num = cond do
 	    reg == "0x80"			-> -2
 	    Enum.member?(instr_ptr, reg)	-> -1
 	    Enum.member?(segm_regs, reg)	-> 1
