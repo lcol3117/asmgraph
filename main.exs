@@ -196,5 +196,5 @@ imul ecx, edx
 hint_nop7
 syscall
 """
-|> AsmGraph.graph(opcodes)
+|> AsmGraph.graph_adj(opcodes)
 |> IO.inspect
