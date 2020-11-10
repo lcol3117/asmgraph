@@ -8,6 +8,8 @@ or, more specifically,
 `AsmGraph.graph_adj/2` represents a flattened sparse adjacency matrix as:
 `AsmGraph.graph_adj(asm_string, opcodes)` -> `[{dimension, value}]`
 
+Warning: The resulting data structure is sparse because it represents a **11,970,018-dimensional** vector. Please do not try to represent it densely. Your computer will thank you (by not catching fire). 
+
 `opcodes` is a map from `String` (an opcode) to unsigned `Integer` (the number to associate with that opcode)
 
 Note that all elements of the result are unsigned integers. 
