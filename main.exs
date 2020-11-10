@@ -28,6 +28,9 @@ defmodule AsmGraph do
         		|> Enum.filter(& &1 != "")
 			|> Enum.map(&String.trim/1)
         		|> Enum.map(&AsmLine.fromString/1)
+			|> Enum.reject(fn %{op: op} ->
+			    String.contains?(op, "nop")
+			end)
         		|> Enum.map(&op_shift/1)
         		|> Enum.with_index(1)
         		|> Enum.map(fn {line, index} ->
