@@ -194,8 +194,6 @@ opcodes =
 	other -> raise "Unable to read opcodes.csv, invalid return #{inspect other}"
     end
 
-IO.inspect opcodes
-
 """
 dec ecx ; this is a comment
 sub ebx, ecx
