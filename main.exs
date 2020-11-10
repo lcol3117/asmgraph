@@ -13,18 +13,11 @@ end
 defmodule AsmGraph do
     def graph_adj(asm, opcodes) do
     	num_opcodes = map_size opcodes
-	num_init_dims = (num_opcodes * num_opcodes) + num_opcodes
-    	s_graphed = graph asm, opcodes
-	s_graphed
+    	asm
+		|> graph(opcodes)
 		|> Enum.map(fn {{source, target}, class} ->
 			{(num_opcodes * source) + target, class}
 		end)
-		|> Enum.map(fn {init_dim, {class_num, deref_count, sysl}} -> [
-			{init_dim, class_num},
-			{init_dim + num_init_dims, deref_count},
-			{init_dim + (num_init_dims * 2), sysl}
-		] end)
-		|> Enum.flat_map(&Function.identity/1)
     end
     def graph(asm, opcodes) do
         basic_repr = asm
@@ -191,13 +184,13 @@ opcodes =
 	other -> raise "Unable to read opcodes.txt, invalid return #{inspect other}"
     end
 
-IO.inspect(
-    AsmGraph.graph_adj """
-    dec ecx ; this is a comment
-    sub ebx, ecx
-    xlatb eax
-    movzx edx, eax
-    imul ecx, edx
-    syscall
-    """, opcodes
-)
+"""
+dec ecx ; this is a comment
+sub ebx, ecx
+xlatb eax
+movzx edx, eax
+imul ecx, edx
+syscall
+"""
+|> AsmGraph.graph(opcodes)
+|> IO.inspect
