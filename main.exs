@@ -176,16 +176,25 @@ defmodule AsmGraph do
 end
 
 opcodes =
-    with {:ok, opcodes_txt} <- File.read("opcodes.txt") do
+    with {:ok, opcodes_txt} <- File.read("opcodes.csv") do
 	opcodes_txt
 		|> String.split("\n")
 		|> Enum.with_index
+		|> Enum.map(fn {cs, index} ->
+		    Enum.map(
+		    	String.split(cs, ","),
+			&{&1, index}
+		    )
+		end)
+		|> Enum.flat_map(&Function.identity/1)
 		|> Map.new
     else
-    	{:error, :enoent} -> raise "Cannot find opcodes.txt (enoent)"
-	{:error, reason} -> raise "Unable to read opcodes.txt because #{inspect reason}"
-	other -> raise "Unable to read opcodes.txt, invalid return #{inspect other}"
+    	{:error, :enoent} -> raise "Cannot find opcodes.csv (enoent)"
+	{:error, reason} -> raise "Unable to read opcodes.csv because #{inspect reason}"
+	other -> raise "Unable to read opcodes.csv, invalid return #{inspect other}"
     end
+
+IO.inspect opcodes
 
 """
 dec ecx ; this is a comment
