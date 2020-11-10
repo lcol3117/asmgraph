@@ -14,10 +14,11 @@ defmodule AsmGraph do
     def graph_adj(asm, opcodes) do
     	num_opcodes = map_size opcodes
     	asm
-		|> graph(opcodes)
-		|> Enum.map(fn {{source, target}, class} ->
-			{(num_opcodes * source) + target, class}
-		end)
+	    |> graph(opcodes)
+	    |> Enum.map(fn {{source, target}, class} ->
+		{(num_opcodes * source) + target, class}
+	    end)
+	    |> Map.new
     end
     def graph(asm, opcodes) do
         basic_repr = asm
