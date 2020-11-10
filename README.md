@@ -1,5 +1,5 @@
 # asmgraph
-Converts assembly to a graph of operations. Written in Elixir. 
+Converts assembly to a graph of operations. Written in Elixir. **WILL MIGRATE TO JULIA SOON**
 
 `AsmGraph.graph(asm_string, opcodes)` -> `[{link_from, link_to}, link_class_info}]`
 or, more specifically,
@@ -25,4 +25,4 @@ Steps:
  - [X] Get Class Information
  - [X] Graph
  - [X] Make Numeric
- - [ ] Convert to Sparse Adjacency Representation
+ - [X] Convert to Sparse Adjacency Representation
