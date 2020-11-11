@@ -52,6 +52,9 @@ function graph(asm, opcodes)
   end)
 end
 
+function opcode_index(opcode, opcodes)
+  (opcodes[opcode] + 1)
+
 multiple(f) = f -> m -> b -> foldl(|>, map(f, m), init=b)
 partial(f) = a -> x -> f(x, a)
 
