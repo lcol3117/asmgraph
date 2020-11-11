@@ -160,7 +160,7 @@ function graph(asm, opcodes)
     let _, targets, _ = x
       targets |> collect |> isempty |> !
     end
-  ) |> map_with(x -> let source, targets, (reg, _)
+  ) |> map_with(x -> let source, targets, (reg, _) = x
     (source, unique(targets), reg_class(reg))
   end) |> unique |> map_with(x -> let source, targets, class = x
       map(s -> (opcode_index(source, opcodes), opcode_index(s, opcodes), class))
