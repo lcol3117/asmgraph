@@ -86,8 +86,14 @@ function reg_class(reg)
   return repr_num + (deref_count * 7)
 end
 
+function line_paths(l, op_map)
+  targets = l[:uses] |> map_with(x -> get(op_map, ))
+end
+
 multiple(f) = f -> m -> b -> foldl(|>, map(f, m), init=b)
 partial(f) = a -> x -> f(x, a)
+
+exval(x) = x != nothing
 
 splat(f) = x -> f(x...)
 
