@@ -53,7 +53,35 @@ function graph(asm, opcodes)
 end
 
 function opcode_index(opcode, opcodes)
-  (opcodes[opcode] + 1)
+  get(opcodes, opcode, -1) + 1
+end
+
+function reg_class(reg)
+  segm_regs = [
+	    "cs", "ds", "es",
+	    "fs", "gs", "ss"
+	]
+	instr_ptr = [
+	    "ip", "eip", "rip"
+	]
+	repr_num =
+  if reg == "0x80"
+    -2
+  elseif reg in instr_ptr
+    -1
+  elseif reg in segm_regs
+    1
+  elseif (reg == "ebp" or reg == "esp")
+    2
+  elseif reg in instr_regs
+    3
+  elseif match(r"^0x.*$", reg) 4
+  elseif match(r"^\d+", reg) 5
+  else 6
+	end
+	deref_count = reg |> String.graphemes |> Enum.count(& &1 == "[")
+	return repr_num + (deref_count * 7)
+end
 
 multiple(f) = f -> m -> b -> foldl(|>, map(f, m), init=b)
 partial(f) = a -> x -> f(x, a)
