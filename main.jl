@@ -16,7 +16,7 @@ end
 graph_with(opcodes) = x -> graph(x, opcodes)
 
 function graph(asm, opcodes)
-  asm |> (replace |> partial |> multiple)([
+  basic_repr = asm |> (replace |> partial |> multiple)([
     "al" => "eax", "ah" => "eax", "ax" => "eax",
     "bl" => "ebx", "bh" => "ebx", "bx" => "ebx",
     "cl" => "ecx", "ch" => "ecx", "cx" => "ecx",
@@ -28,13 +28,20 @@ function graph(asm, opcodes)
     occursin("nop", x[:op])
   ) |> map_with(op_shift) |> enumerate |> map_with(x ->
     let index, line = x
-      push!(line, :gen => )
+      push!(line, :gen => (line[:gen], index))
     end
-  )
+  ) |> foldl_with(factify_uses, init=([],Dict())) |>
+  first |> collect |> reverse
+  shifted_repr = basic_repr |> filter_with(x -> mov_like(x[:op])) |>
+  map_with(x -> let use = Iterators.peel(x[:uses])
+     ??? 
+  end) |>
 end
 
 multiple(f) = f -> m -> b -> foldl(|>, map(f, m), init=b)
 partial(f) = a -> x -> f(x, a)
+
+foldl_with(f; kw...) = x -> foldl(f, x; kw...)
 
 filter_with(f) = x -> filter(f, x)
 
