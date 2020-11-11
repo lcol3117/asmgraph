@@ -1,6 +1,6 @@
 function read_asm_line(text)
-  op, args = text |> lowercase |> split_with(" ") |> Iterators.peel
-  gen, unmod = args |> collect |> join |> split_with(",") |> Iterators.peel
+  op, args = text |> lowercase |> partial(split)(" ") |> Iterators.peel
+  gen, unmod = args |> collect |> join |> partial(split)(",") |> Iterators.peel
   uses = icat(gen, unmod)
   @MakeDict op gen uses
 end
@@ -16,10 +16,14 @@ end
 graph_with(opcodes) = x -> graph(x, opcodes)
 
 function graph(asm, opcodes)
-  #?
+  asm |> partial(replace)() \
+  |> partial(replace)("sysenter" => "syscall") |> partial(replace)(
+    "syscall" => "int 0x80, eax, ebx, edx, ecx"
+  )
 end
 
-split_with(delim) = x -> split(x, delim)
+multiple(f) = x -> map(f, x) |> foldl(|>)
+partial(f) = a -> x -> f(x, a)
 
 Iterators.rest(itr::Iterators.Rest, state) = Iterators.Rest(itr.itr, state)
 
