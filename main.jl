@@ -1,13 +1,13 @@
 function read_asm_line(text)
   op, args = text |> lowercase |> partial(split)(" ") |> Iterators.peel
   gen, unmod = args |> collect |> join |> partial(split)(",") |> Iterators.peel
-  uses = icat(gen, unmod)
+  uses = [[gen] ; unmod]
   return @MakeDict op gen uses
 end
 
 function graph_adj(asm, opcodes)
   return asm |> graph_with(opcodes) |> map_with(x ->
-    let (source => target) => class = x
+    let source, target, class = x
       (length(opcodes) * source) + target => class
     end
   ) |> splat(Dict)
@@ -28,14 +28,14 @@ function graph(asm, opcodes)
     occursin("nop", x[:op])
   ) |> map_with(op_shift) |> enumerate |> map_with(x ->
     let index, line = x
-      push!(line, :gen => (line[:gen], index))
+      push(line, :gen => (line[:gen], index))
     end
   ) |> foldl_with(factify_uses, init=([],Dict())) |>
   first |> collect |> reverse
   shifted_repr = basic_repr |> filter_with(x -> mov_like(x[:op])) |>
   map_with(x -> (x[:gen], Iterators.peel(x[:uses]))) |>
-  foldl_with(mov_shifting, init=basic_repr) |>filter_with(x -> !mov_like(x[:op]))
-  op_map = shifted_repr |> map_with(x -> x[:gen] => x[:op]) |> splat(Dict)
+  foldl_with(mov_shifting, init=basic_repr) |> filter_with(x -> !mov_like(x[:op]))
+  op_map = shifted_repr |> map_with(x -> (x[:gen], x[:op])) |> splat(Dict)
   return shifted_repr |> filter_with(x -> !mov_like(x[:op])) |>
   (line_paths |> partial |> map_with) |> filter_with(x ->
     let _, targets, _ = x
@@ -43,11 +43,9 @@ function graph(asm, opcodes)
     end
   ) |> map_with(x -> let source, targets, (reg, _)
     (source, unique(targets), reg_class(reg))
-  end) |> unique |> map_with(x ->
-    let source, targets, class = x
+  end) |> unique |> map_with(x -> let source, targets, class = x
       map(s -> (opcode_index(source, opcodes), opcode_index(s, opcodes), class))
-    end
-  ) |> Iterators.flatten |> map_with(x -> let source, targets, class = x
+  end) |> Iterators.flatten |> map_with(x -> let source, targets, class = x
     (source, targets, class)
   end)
 end
@@ -90,6 +88,72 @@ function line_paths(l, op_map)
   targets = l[:uses] |> map_with(x -> nget(op_map, x)) |> filter_with(exval)
   return (op, targets, gen)
 end
+
+function mov_like(op)
+  occursin("mov", op) || (op == "lea")
+end
+
+function mov_shifting(flow, basic_repr)
+  from, to = flow
+  map(x -> push(x, :uses => map(s -> (s == from) ? to : s, x[:uses])), basic_repr)
+end
+
+function factify_uses(line, direct)
+  acc, gen_map = direct
+  gen = line[:gen]
+  gen_v, gen_i = gen
+  uses = map(x -> (x, get(gen_map, x, 0)), line[:uses])
+  new_line = @MakeDict op gen uses
+  return ([[new_line] ; acc], push(gen_map, gen_v, gen_i))
+end
+
+function op_shift(line)
+  foldl(shifts, (flow, line) -> let from, to = flow
+    (line[:op] == from) ? push(line, :op => to) : line
+  end, init=line)
+end
+
+const shifts = [
+  ("jz", "je"),
+  ("jnz", "jne"),
+  ("iretd", "iret"),
+  ("jnbe", "ja"),
+  ("jnb", "jae"),
+  ("jnae", "jb"),
+  ("jna", "jbe"),
+  ("jecxz", "jcxz"),
+  ("jnle", "jg"),
+  ("jnl", "jge"),
+  ("jnge", "jl"),
+  ("jng", "jle"),
+  ("jp", "jpe"),
+  ("jnp", "jpo"),
+  ("loopz", "loope"),
+  ("loopnz", "loopne"),
+  ("popad", "popa"),
+  ("popfd", "popf"),
+  ("pushad", "pusha"),
+  ("pushfd", "pushf"),
+  ("repz", "repe"),
+  ("repnz", "repne"),
+  ("retf", "ret"),
+  ("shl", "sal"),
+  ("setnbe", "seta"),
+  ("setnb", "setae"),
+  ("setnae", "setb"),
+  ("setna", "setbe"),
+  ("setz", "sete"),
+  ("setnz", "setne"),
+  ("setnge", "setl"),
+  ("setng", "setle"),
+  ("setnle", "setg"),
+  ("setnl", "setge"),
+  ("setp", "setpe"),
+  ("setnp", "setpo"),
+  ("shld", "shrd"),
+  ("fwait", "wait"),
+  ("xlatb", "xlat")
+]
 
 multiple(f) = f -> m -> b -> foldl(|>, map(f, m), init=b)
 partial(f) = a -> x -> f(x, a)
