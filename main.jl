@@ -48,7 +48,7 @@ function reg_class(reg)
     -1
   elseif reg in segm_regs
     1
-  elseif (reg == "ebp" or reg == "esp")
+  elseif (reg == "ebp" || reg == "esp")
     2
   elseif reg in instr_regs
     3
