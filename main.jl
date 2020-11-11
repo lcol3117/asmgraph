@@ -6,6 +6,7 @@ splat(f) = x -> f(x...)
 foldl_with(f; kw...) = x -> foldl(f, x; kw...)
 filter_with(f) = x -> filter(f, x)
 map_with(f) = x -> map(f, x)
+split_with(delim) = x -> split(x, delim)
 
 Iterators.rest(itr::Iterators.Rest, state) = Iterators.Rest(itr.itr, state)
 
@@ -23,8 +24,8 @@ macro MakeDict(args...)
 end
 
 function read_asm_line(text)
-  op, args = text |> lowercase |> partial(split)(" ") |> Iterators.peel
-  gen, unmod = args |> collect |> join |> partial(split)(",") |> Iterators.peel
+  op, args = text |> lowercase |> split_with(" ") |> Iterators.peel
+  gen, unmod = args |> collect |> join |> split_with(",") |> Iterators.peel
   uses = [[gen] ; unmod]
   return @MakeDict op gen uses
 end
@@ -142,7 +143,7 @@ function graph(asm, opcodes)
     "dl" => "edx", "dh" => "edx", "dx" => "edx",
     r";.*\n" => "\n", "sysenter" => "syscall",
     "syscall" => "int 0x80, eax, ebx, ecx, edx"
-  ]) |> partial(split)("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
+  ]) |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
   map_with(read_asm_line) |> filter_with(x ->
     occursin("nop", x[:op])
   ) |> map_with(op_shift) |> enumerate |> map_with(x ->
@@ -182,7 +183,7 @@ io_opcodes_csv = open("opcodes.csv", "r")
 opcodes_csv = read(io_opcodes_csv, String)
 close(io_opcodes_csv)
 
-opcodes = opcodes_csv |> partial(split)("\n") |> enumerate |> map_with(x ->
+opcodes = opcodes_csv |> split_with("\n") |> enumerate |> map_with(x ->
   let (index, (_, cs)) = x
     map(s -> s => index, split(cs, ","))
   end
