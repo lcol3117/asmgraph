@@ -49,7 +49,7 @@ defmodule AsmGraph do
 			    |> Enum.map(fn %{op: op, gen: gen} -> {gen, op} end)
 			    |> Map.new
 	shifted_repr
-		|> Enum.filter(fn %{op: op} -> op != "mov" end)
+		|> Enum.filter(fn %{op: op} -> not mov_like(op) end)
 		|> Enum.map(&line_paths(&1, op_map))
 		|> Enum.filter(fn {_, targets, _} -> targets != [] end)
 		|> Enum.map(fn {source, targets, {reg, _}} -> {
