@@ -6,7 +6,7 @@ splat(f) = x -> f(x...)
 foldl_with(f; kw...) = x -> foldl(f, x; kw...)
 filter_with(f) = x -> filter(f, x)
 map_with(f) = x -> map(f, x)
-split_with(delim) = x -> split(x, delim)
+split_with(delim) = x -> split(delim, x)
 
 Iterators.rest(itr::Iterators.Rest, state) = Iterators.Rest(itr.itr, state)
 
@@ -183,8 +183,11 @@ io_opcodes_csv = open("opcodes.csv", "r")
 opcodes_csv = read(io_opcodes_csv, String)
 close(io_opcodes_csv)
 
-opcodes = opcodes_csv |> split_with("\n") |> enumerate |> map_with(x ->
+sp(x) = let println(x) x end
+
+opcodes = opcodes_csv |> split_with("\n") |>sp|> enumerate |>sp|> map_with(x ->
   let (index, (_, cs)) = x
+    println(index => cs => x)
     map(s -> s => index, split(cs, ","))
   end
 ) |> Iterators.flatten |> splat(Dict)
