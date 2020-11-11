@@ -33,7 +33,7 @@ function graph(asm, opcodes)
     "dl" => "edx", "dh" => "edx", "dx" => "edx",
     r";.*\n" => "\n", "sysenter" => "syscall",
     "syscall" => "int 0x80, eax, ebx, ecx, edx"
-  ]) |> partial(split)("\n") |> filter_with(x -> x != "") |>
+  ]) |> partial(split)("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
   map_with(read_asm_line) |> filter_with(x ->
     occursin("nop", x[:op])
   ) |> map_with(op_shift) |> enumerate |> map_with(x ->
@@ -185,4 +185,12 @@ filter_with(f) = x -> filter(f, x)
 map_with(f) = x -> map(f, x)
 Iterators.rest(itr::Iterators.Rest, state) = Iterators.Rest(itr.itr, state)
 
-
+"""
+dec ecx ; this is a comment
+sub ebx, ecx
+xlatb eax
+movzx edx, eax
+imul ecx, edx
+hint_nop7
+syscall
+""" |> partial(graph_adj)(opcodes) |> println
