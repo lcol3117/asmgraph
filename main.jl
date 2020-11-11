@@ -129,7 +129,7 @@ const shifts = [
 ]
 
 function op_shift(line)
-  foldl(shifts, (flow, line) -> let from, to = flow
+  foldl(shifts, (flow, line) -> let (from, to) = flow
     (line[:op] == from) ? push(line, :op => to) : line
   end, init=line)
 end
@@ -146,7 +146,7 @@ function graph(asm, opcodes)
   map_with(read_asm_line) |> filter_with(x ->
     occursin("nop", x[:op])
   ) |> map_with(op_shift) |> enumerate |> map_with(x ->
-    let index, line = x
+    let (index, line) = x
       push(line, :gen => (line[:gen], index))
     end
   ) |> foldl_with(factify_uses, init=([],Dict())) |>
@@ -157,21 +157,21 @@ function graph(asm, opcodes)
   op_map = shifted_repr |> map_with(x -> (x[:gen], x[:op])) |> splat(Dict)
   return shifted_repr |> filter_with(x -> !mov_like(x[:op])) |>
   (line_paths |> partial |> map_with) |> filter_with(x ->
-    let _, targets, _ = x
+    let (_, targets, _) = x
       targets |> collect |> isempty |> !
     end
-  ) |> map_with(x -> let source, targets, (reg, _) = x
+  ) |> map_with(x -> let (source, targets, (reg, _)) = x
     (source, unique(targets), reg_class(reg))
-  end) |> unique |> map_with(x -> let source, targets, class = x
+  end) |> unique |> map_with(x -> let (source, targets, class) = x
       map(s -> (opcode_index(source, opcodes), opcode_index(s, opcodes), class))
-  end) |> Iterators.flatten |> map_with(x -> let source, targets, class = x
+	end) |> Iterators.flatten |> map_with(x -> let (source, targets, class) = x
     (source, targets, class)
   end)
 end
 
 function graph_adj(asm, opcodes)
   return asm |> partial(graph)(opcodes) |> map_with(x ->
-    let source, target, class = x
+    let (source, target, class) = x
       (length(opcodes) * source) + target => class
     end
   ) |> splat(Dict)
@@ -183,8 +183,7 @@ opcodes_csv = read(io_opcodes_csv, String)
 close(io_opcodes_csv)
 
 opcodes = opcodes_csv |> partial(split)("\n") |> enumerate |> map_with(x ->
-  let index, cs = x
-    println(x)
+  let (index, cs) = x
     map(s -> s => index, split(cs, ","))
   end
 ) |> Iterators.flatten |> splat(Dict)
