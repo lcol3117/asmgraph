@@ -1,11 +1,25 @@
 function read_asm_line(text)
-  op, args = text |> lowercase |> split_on(" ") |> Iterators.peel
-  gen, unmod = args |> collect |> join |> split_on(",") |> Iterators.peel
+  op, args = text |> lowercase |> split_with(" ") |> Iterators.peel
+  gen, unmod = args |> collect |> join |> split_with(",") |> Iterators.peel
   uses = icat(gen, unmod)
   @MakeDict op gen uses
 end
 
-split_on(delim) = x -> split(x, delim)
+function graph_adj(asm, opcodes)
+  asm |> graph_with(opcodes) |> map_with(x ->
+    let (source => target) => class = x
+      (length(opcodes) * source) + target => class
+    end
+  ) |> Dict
+end
+
+graph_with(opcodes) = x -> graph(x, opcodes)
+
+function graph(asm, opcodes)
+  #?
+end
+
+split_with(delim) = x -> split(x, delim)
 
 Iterators.rest(itr::Iterators.Rest, state) = Iterators.Rest(itr.itr, state)
 
@@ -24,3 +38,4 @@ macro MakeDict(args...)
   end
 end
 
+map_with(f) = x -> map(f, x)
