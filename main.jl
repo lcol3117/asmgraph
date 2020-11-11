@@ -189,7 +189,7 @@ function sp(x)
 end
 
 opcodes = opcodes_csv |> split_with("\n") |>sp|> enumerate |>sp|> map_with(x ->
-  let (index, (_, cs)) = x
+  let (index, cs) = x
     println(index => cs => x)
     map(s -> s => index, split(cs, ","))
   end
