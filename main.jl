@@ -4,7 +4,7 @@ function PairExpr(x)
   end
 end
 macro MakeDict(args...)
-  dict_args = map(PairExpr, args) |> collect
+  dict_args = args |> map_with(PairExpr) |> collect
   return quote
     Dict($(dict_args...))
   end
