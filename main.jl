@@ -183,7 +183,7 @@ io_opcodes_csv = open("opcodes.csv", "r")
 opcodes_csv = read(io_opcodes_csv, String)
 close(io_opcodes_csv)
 
-opcodes = opcodes_csv |> split_with("\n", keepempty=false) |> filter_with(x -> x != "") |>
+opcodes = opcodes_csv |> split_with("\n") |> filter_with(x -> x != "") |>
 enumerate |> map_with(x ->
   let (index, cs) = x
     println(index => cs => x)
