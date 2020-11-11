@@ -75,12 +75,15 @@ function reg_class(reg)
     2
   elseif reg in instr_regs
     3
-  elseif match(r"^0x.*$", reg) 4
-  elseif match(r"^\d+", reg) 5
-  else 6
-	end
-	deref_count = reg |> String.graphemes |> Enum.count(& &1 == "[")
-	return repr_num + (deref_count * 7)
+  elseif match(r"^0x.*$", reg)
+    4
+  elseif match(r"^\d+", reg)
+    5
+  else
+    6
+  end
+  deref_count = count(partial(==)("["), reg)
+  return repr_num + (deref_count * 7)
 end
 
 multiple(f) = f -> m -> b -> foldl(|>, map(f, m), init=b)
