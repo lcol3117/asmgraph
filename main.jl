@@ -1,3 +1,15 @@
+function PairExpr(x)
+  return quote
+    $(Meta.quot(x)) => $x
+  end
+end
+macro MakeDict(args...)
+  dict_args = map(PairExpr, args) |> collect
+  return quote
+    Dict($(dict_args...))
+  end
+end
+
 function read_asm_line(text)
   op, args = text |> lowercase |> partial(split)(" ") |> Iterators.peel
   gen, unmod = args |> collect |> join |> partial(split)(",") |> Iterators.peel
@@ -6,14 +18,12 @@ function read_asm_line(text)
 end
 
 function graph_adj(asm, opcodes)
-  return asm |> graph_with(opcodes) |> map_with(x ->
+  return asm |> partial(graph)(opcodes) |> map_with(x ->
     let source, target, class = x
       (length(opcodes) * source) + target => class
     end
   ) |> splat(Dict)
 end
-
-graph_with(opcodes) = x -> graph(x, opcodes)
 
 function graph(asm, opcodes)
   basic_repr = asm |> (replace |> partial |> multiple)([
@@ -155,34 +165,24 @@ const shifts = [
   ("xlatb", "xlat")
 ]
 
+io_opcodes_csv = open("opcodes.csv", "r")
+opcodes_csv = read(io_opcodes_csv, String)
+close(io_opcodes_csv)
+
+opcodes = opcodes_csv |> partial(split)("\n") |> enumerate |> map_with(x ->
+  let index, cs = x
+    map(s -> s => index, split(cs, ","))
+  end
+) |> Iterators.flatten |> splat(Dict)
+
 multiple(f) = f -> m -> b -> foldl(|>, map(f, m), init=b)
 partial(f) = a -> x -> f(x, a)
-
 exval(x) = x != nothing
-
 nget(x, v) = get(x, v, nothing)
-
 splat(f) = x -> f(x...)
-
 foldl_with(f; kw...) = x -> foldl(f, x; kw...)
-
 filter_with(f) = x -> filter(f, x)
-
+map_with(f) = x -> map(f, x)
 Iterators.rest(itr::Iterators.Rest, state) = Iterators.Rest(itr.itr, state)
 
-icat(args...) = Iterators.flatten(args)
 
-function PairExpr(x)
-  return quote
-    $(Meta.quot(x)) => $x
-  end
-end
-
-macro MakeDict(args...)
-  dict_args = map(PairExpr, args) |> collect
-  return quote
-    Dict($(dict_args...))
-  end
-end
-
-map_with(f) = x -> map(f, x)
