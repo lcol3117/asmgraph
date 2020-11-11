@@ -183,7 +183,10 @@ io_opcodes_csv = open("opcodes.csv", "r")
 opcodes_csv = read(io_opcodes_csv, String)
 close(io_opcodes_csv)
 
-sp(x) = let println(x); x; end
+function sp(x)
+  println(x)
+  return x
+end
 
 opcodes = opcodes_csv |> split_with("\n") |>sp|> enumerate |>sp|> map_with(x ->
   let (index, (_, cs)) = x
