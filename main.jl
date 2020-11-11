@@ -24,9 +24,13 @@ function graph(asm, opcodes)
     r";.*\n" => "\n", "sysenter" => "syscall",
     "syscall" => "int 0x80, eax, ebx, ecx, edx"
   ]) |> partial(split)("\n") |> filter_with(x -> x != "") |>
-    map_with(read_asm_line) |> filter_with(x ->
-      occursin("nop", x[:op])
-    ) |> map_with(op_shift) |> enumerate |> 
+  map_with(read_asm_line) |> filter_with(x ->
+    occursin("nop", x[:op])
+  ) |> map_with(op_shift) |> enumerate |> map_with(x ->
+    let index, line = x
+      push!(line, :gen => )
+    end
+  )
 end
 
 multiple(f) = f -> m -> b -> foldl(|>, map(f, m), init=b)
