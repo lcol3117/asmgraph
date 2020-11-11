@@ -87,13 +87,16 @@ function reg_class(reg)
 end
 
 function line_paths(l, op_map)
-  targets = l[:uses] |> map_with(x -> get(op_map, ))
+  targets = l[:uses] |> map_with(x -> nget(op_map, x)) |> filter_with(exval)
+  return (op, targets, gen)
 end
 
 multiple(f) = f -> m -> b -> foldl(|>, map(f, m), init=b)
 partial(f) = a -> x -> f(x, a)
 
 exval(x) = x != nothing
+
+nget(x, v) = get(x, v, nothing)
 
 splat(f) = x -> f(x...)
 
