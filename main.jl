@@ -10,3 +10,17 @@ split_on(delim) = x -> split(x, delim)
 Iterators.rest(itr::Iterators.Rest, state) = Iterators.Rest(itr.itr, state)
 
 icat(args...) = Iterators.flatten(args)
+
+function PairExpr(x)
+  return quote
+    $(Meta.quot(x)) => $x
+  end
+end
+
+macro MakeDict(args...)
+  dict_args = map(PairExpr, args) |> collect
+  return quote
+    Dict($(dict_args...))
+  end
+end
+
