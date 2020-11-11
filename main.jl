@@ -34,8 +34,12 @@ function graph(asm, opcodes)
   first |> collect |> reverse
   shifted_repr = basic_repr |> filter_with(x -> mov_like(x[:op])) |>
   map_with(x -> let use = Iterators.peel(x[:uses])
-     ??? 
-  end) |>
+     (x[:gen], use)
+  end
+  ) |> foldl_with(mov_shifting, init=basic_repr) |> filter_with(x ->
+    !mov_like(x[:op])
+  )
+  
 end
 
 multiple(f) = f -> m -> b -> foldl(|>, map(f, m), init=b)
