@@ -156,9 +156,11 @@ function graph(asm, opcodes)
     (source, unique(targets), reg_class(reg))
   end) |> unique |> map_with(x -> let (source, targets, class) = x
       map(s -> (opcode_index(source, opcodes), opcode_index(s, opcodes), class))
-	end) |> Iterators.flatten |> map_with(x -> let (source, targets, class) = x
-    (source, targets, class)
-  end)
+  end) |> collect |> println
+  #|> Iterators.flatten |> map_with(x -> let (source, targets, class) = x
+  #  (source, targets, class)
+  #end)
+  [(:ha, :ha, :pranked)]
 end
 
 function graph_adj(asm, opcodes)
