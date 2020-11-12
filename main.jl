@@ -116,9 +116,11 @@ const shifts = [
 ]
 
 function op_shift(line)
-  foldl(shifts, (flow, line) -> let (from, to) = flow
-    (line[:op] == from) ? push(line, :op => to) : line
-  end, init=line)
+  f_unit = (flow, line) ->
+    let (from, to) = flow
+      (line[:op] == from) ? push(line, :op => to) : line
+    end
+  return foldl(f_unit, shifts, init=line)
 end
 
 const r_mods = [
