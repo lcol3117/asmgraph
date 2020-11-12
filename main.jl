@@ -134,15 +134,17 @@ function op_shift(line)
   end, init=line)
 end
 
+const r_mods = [
+  "al" => "eax", "ah" => "eax", "ax" => "eax",
+  "bl" => "ebx", "bh" => "ebx", "bx" => "ebx",
+  "cl" => "ecx", "ch" => "ecx", "cx" => "ecx",
+  "dl" => "edx", "dh" => "edx", "dx" => "edx",
+  r";.*\n" => "\n", "sysenter" => "syscall",
+  "syscall" => "int 0x80, eax, ebx, ecx, edx"
+]
 function graph(asm, opcodes)
-  basic_repr = asm |> multiple(replace |> partial, [
-    "al" => "eax", "ah" => "eax", "ax" => "eax",
-    "bl" => "ebx", "bh" => "ebx", "bx" => "ebx",
-    "cl" => "ecx", "ch" => "ecx", "cx" => "ecx",
-    "dl" => "edx", "dh" => "edx", "dx" => "edx",
-    r";.*\n" => "\n", "sysenter" => "syscall",
-    "syscall" => "int 0x80, eax, ebx, ecx, edx"
-  ]) |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
+  start = foldl(replace, r_mods, init=asm)
+  basic_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
   map_with(read_asm_line) |> filter_with(x ->
     occursin("nop", x[:op])
   ) |> map_with(op_shift) |> enumerate |> map_with(x ->
