@@ -1,16 +1,14 @@
 multiple(f) = f -> m -> b -> foldl(|>, map(f, m), init=b)
 partial(f) = a -> x -> f(x, a)
 exval(x) = x != nothing
+until(x::Int) = a -> a[1:x]
+until(x) where x == :last = until(length(x) - 1)
 nget(x, v) = get(x, v, nothing)
 splat(f) = x -> f(x...)
 foldl_with(f; kw...) = x -> foldl(f, x; kw...)
 filter_with(f) = x -> filter(f, x)
 map_with(f) = x -> map(f, x)
-split_with(delim) = x -> let
-  println("Splitting $x with $delim")
-  split(x, delim)
-end
-
+split_with(delim) = x -> split(x, delim)
 Iterators.rest(itr::Iterators.Rest, state) = Iterators.Rest(itr.itr, state)
 
 function PairExpr(x)
@@ -187,7 +185,7 @@ opcodes_csv = read(io_opcodes_csv, String)
 close(io_opcodes_csv)
 
 opcodes = opcodes_csv |> split_with("\n") |> filter_with(x -> x != "") |>
-enumerate |> map_with(x ->
+enumerate |> withoutLast |> map_with(x ->
   let (index, cs) = x
     cs |> split_with(",") |> map_with(s -> (s => index))
   end
