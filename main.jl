@@ -61,7 +61,7 @@ end
 
 function mov_shifting(flow, basic_repr)
   from, to = flow
-  map(x -> union(x, Dict(:uses => map(s -> (s == from) ? to : s, x[:uses])), basic_repr))
+  map(x -> union(x, Dict(:uses => map(s -> (s == from) ? to : s, x[:uses])) |> splat(Dict), basic_repr))
 end
 
 function factify_uses(direct, line)
@@ -70,7 +70,7 @@ function factify_uses(direct, line)
   gen_v, gen_i = gen
   uses = map(x -> (x, get(gen_map, x, 0)), line[:uses])
   new_line = Dict(:op => op, :gen => gen, :uses => uses)
-  return ([[new_line] ; acc], union(gen_map, Dict(gen_v => gen_i)))
+  return ([[new_line] ; acc], union(gen_map, Dict(gen_v => gen_i)) |> splat(Dict))
 end
 
 const shifts = [
@@ -118,7 +118,7 @@ const shifts = [
 function op_shift(s_line)
   f_unit = (line, flow) ->
     let (from, to) = flow
-      (line[:op] == from) ? union(line, Dict(:op => to)) : line
+      (line[:op] == from) ? union(line, Dict(:op => to)) |> splat(Dict) : line
     end
   return foldl(f_unit, shifts, init=s_line)
 end
@@ -139,10 +139,10 @@ function graph(asm, opcodes)
     occursin("nop", x[:op])
   ) |> map_with(op_shift) |> enumerate |> map_with(x ->
     let (index, line) = x
-      union(line, Dict(:gen => (line[:gen], index)))
+      union(line, Dict(:gen => (line[:gen], index))) |> splat(Dict)
     end
   ) |> foldl_with(factify_uses, init=([],Dict())) |>
-  first |> collect |> splat(Dict)
+  first |> collect
   shifted_repr = basic_repr |> filter_with(x -> mov_like(x[:op])) |>
   map_with(x -> (x[:gen], Iterators.peel(x[:uses]))) |>
   foldl_with(mov_shifting, init=basic_repr) |> filter_with(x -> !mov_like(x[:op]))
