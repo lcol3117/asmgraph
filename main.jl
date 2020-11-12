@@ -187,8 +187,13 @@ println(opcodes_csv)
 println(opcodes_csv |> split_with("\n"))
 println("yee")
 
+sp(x) = let
+	println(x)
+	x
+end
+
 opcodes = opcodes_csv |> split_with("\n") |> filter_with(x -> x != "") |>
-enumerate |> collect |> map_with(x ->
+enumerate |> collect |> sp |> map_with(x ->
   let (index, cs) = x
     if isa(cs, String)
       println("yeet")
