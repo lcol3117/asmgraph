@@ -115,12 +115,12 @@ const shifts = [
   ("xlatb", "xlat")
 ]
 
-function op_shift(line)
-  f_unit = (flow, line) ->
+function op_shift(s_line)
+  f_unit = (line, flow) ->
     let (from, to) = flow
       (line[:op] == from) ? push(line, :op => to) : line
     end
-  return foldl(f_unit, shifts, init=line)
+  return foldl(f_unit, shifts, init=s_line)
 end
 
 const r_mods = [
