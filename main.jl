@@ -52,7 +52,7 @@ end
 
 function line_paths(l, op_map)
   targets = l[:uses] |> map_with(x -> nget(op_map, x)) |> filter_with(exval)
-  return (line[:op], targets, line[:gen])
+  return (l[:op], targets, l[:gen])
 end
 
 function mov_like(op)
