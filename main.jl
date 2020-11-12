@@ -186,7 +186,7 @@ close(io_opcodes_csv)
 opcodes = opcodes_csv |> split_with("\n") |> filter_with(x -> x != "") |>
 enumerate |> map_with(x ->
   let (index, cs) = x
-    cs |> split_with(",") |> map(s -> (s => index))
+    cs |> split_with(",") |> map_with(s -> (s => index))
   end
 ) |> Iterators.flatten |> splat(Dict)
 
