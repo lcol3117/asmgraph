@@ -194,10 +194,10 @@ enumerate |> collect |> map_with(x ->
     if isa(cs, String)
       cs |> split_with(",") |> map_with(s -> (s => index))
     else
-      nothing
+      []
     end
   end
-) |> Iterators.flatten |> collect |> filter_with(exval) |> splat(Dict)
+) |> Iterators.flatten |> splat(Dict)
 
 """
 dec ecx ; this is a comment
