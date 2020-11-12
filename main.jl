@@ -7,7 +7,7 @@ splat(f) = x -> f(x...)
 foldl_with(f; kw...) = x -> foldl(f, x; kw...)
 filter_with(f) = x -> filter(f, x)
 map_with(f) = x -> map(f, x)
-split_with(delim) = x -> split(x, delim) |> string
+split_with(delim) = x -> split(x, delim)
 Iterators.rest(itr::Iterators.Rest, state) = Iterators.Rest(itr.itr, state)
 
 function PairExpr(x)
