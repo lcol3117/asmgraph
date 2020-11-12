@@ -1,8 +1,9 @@
 multiple(f) = f -> m -> b -> foldl(|>, map(f, m), init=b)
 partial(f) = a -> x -> f(x, a)
 exval(x) = x != nothing
+struct Last end
 until(x::Int) = a -> a[1:x]
-until(x) where x == :last = until(length(x) - 1)
+until(_::Type{Last}) = until(length(x) - 1)
 nget(x, v) = get(x, v, nothing)
 splat(f) = x -> f(x...)
 foldl_with(f; kw...) = x -> foldl(f, x; kw...)
@@ -185,7 +186,7 @@ opcodes_csv = read(io_opcodes_csv, String)
 close(io_opcodes_csv)
 
 opcodes = opcodes_csv |> split_with("\n") |> filter_with(x -> x != "") |>
-enumerate |> withoutLast |> map_with(x ->
+enumerate |> until(Last) |> map_with(x ->
   let (index, cs) = x
     cs |> split_with(",") |> map_with(s -> (s => index))
   end
