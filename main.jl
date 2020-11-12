@@ -3,7 +3,7 @@ partial(f) = a -> x -> f(x, a)
 exval(x) = x != nothing
 struct Last end
 until(x::Int) = a -> a[1:x]
-until(_::Type{Last}) = until(length(x) - 1)
+until(_::Type{Last}) = a -> a[1:(length(a) - 1)]
 nget(x, v) = get(x, v, nothing)
 splat(f) = x -> f(x...)
 foldl_with(f; kw...) = x -> foldl(f, x; kw...)
