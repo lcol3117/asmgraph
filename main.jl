@@ -1,14 +1,14 @@
-multiple(f) = f -> m -> b -> foldl(|>, map(f, m), init=b)
-partial(f) = a -> x -> f(x, a)
-exval(x) = x != nothing
-until_last(x) = x |> Iterators.reverse |> Iterators.peel |> Iterators.reverse
-nget(x, v) = get(x, v, nothing)
-splat(f) = x -> f(x...)
-foldl_with(f; kw...) = x -> foldl(f, x; kw...)
-filter_with(f) = x -> filter(f, x)
-map_with(f) = x -> map(f, x)
-split_with(delim) = x -> split(x, delim)
-Iterators.rest(itr::Iterators.Rest, state) = Iterators.Rest(itr.itr, state)
+multiple(fq) = fq -> mq -> bq -> foldl(|>, map(fq, mq), init=bq)
+partial(fq) = aq -> xq -> f(xq, aq)
+exval(xq) = xq != nothing
+until_last(xq) = xq |> Iterators.reverse |> Iterators.peel |> Iterators.reverse
+nget(xq, vq) = get(xq, vq, nothing)
+splat(fq) = xq -> fq(xq...)
+foldl_with(fq; kwq...) = xq -> foldl(fq, xq; kwq...)
+filter_with(fq) = xq -> filter(fq, xq)
+map_with(fq) = xq -> map(fq, xq)
+split_with(delimq) = xq -> split(xq, delimq)
+Iterators.rest(itrq::Iterators.Rest, stateq) = Iterators.Rest(itrq.itr, stateq)
 
 function PairExpr(x)
   return quote
