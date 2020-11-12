@@ -189,7 +189,7 @@ sp(x) = let
 end
 
 opcodes = opcodes_csv |> split_with("\n") |> filter_with(x -> x != "") |>
-enumerate |> (Tuple{Any,String} |> partial(isa) |> filter_with) |> map_with(x ->
+enumerate |> collect |> (Tuple{Any,String} |> partial(isa) |> filter_with) |> map_with(x ->
   let (index, cs) = x
     cs |> split_with(",") |> map_with(s -> (s => index))
   end
