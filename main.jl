@@ -6,7 +6,10 @@ splat(f) = x -> f(x...)
 foldl_with(f; kw...) = x -> foldl(f, x; kw...)
 filter_with(f) = x -> filter(f, x)
 map_with(f) = x -> map(f, x)
-split_with(delim) = x -> split(x, delim)
+split_with(delim) = x -> let
+  println("Splitting $x with $delim")
+  split(x, delim)
+end
 
 Iterators.rest(itr::Iterators.Rest, state) = Iterators.Rest(itr.itr, state)
 
