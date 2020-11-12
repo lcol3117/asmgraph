@@ -189,15 +189,11 @@ sp(x) = let
 end
 
 opcodes = opcodes_csv |> split_with("\n") |> filter_with(x -> x != "") |>
-enumerate |> collect |> map_with(x ->
-  try
-    let (index, cs) = x
-      cs |> split_with(",") |> map_with(s -> (s => index))
-    end
-  catch _
-    nothing
+enumerate |> (Tuple{Any,String} |> partial(isa) |> filter_with) |> map_with(x ->
+  let (index, cs) = x
+    cs |> split_with(",") |> map_with(s -> (s => index))
   end
-) |> Iterators.flatten |> collect |> filter_with(exval) |> splat(Dict)
+) |> Iterators.flatten |> splat(Dict)
 
 """
 dec ecx ; this is a comment
