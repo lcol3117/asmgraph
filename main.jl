@@ -186,7 +186,7 @@ opcodes_csv = read(io_opcodes_csv, String)
 close(io_opcodes_csv)
 
 opcodes = opcodes_csv |> split_with("\n") |> filter_with(x -> x != "") |>
-enumerate |> until(Last) |> map_with(x ->
+enumerate |> collect |> until(Last) |> map_with(x ->
   let (index, cs) = x
     cs |> split_with(",") |> map_with(s -> (s => index))
   end
