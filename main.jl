@@ -132,6 +132,8 @@ const r_mods = [
   "syscall" => "int 0x80, eax, ebx, ecx, edx"
 ]
 
+sp(x) = let; println(x); x; end
+
 function graph(asm, opcodes)
   start = foldl(replace, r_mods, init=asm)
   basic_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
@@ -143,9 +145,11 @@ function graph(asm, opcodes)
     end
   ) |> foldl_with(factify_uses, init=([],Dict())) |>
   first |> collect
+  @show basic_repr
   shifted_repr = basic_repr |> filter_with(x -> mov_like(x[:op])) |>
   map_with(x -> (x[:gen], Iterators.peel(x[:uses]))) |>
   foldl_with(mov_shifting, init=basic_repr) |> filter_with(x -> !mov_like(x[:op]))
+  @show shifted_repr
   op_map = shifted_repr |> map_with(x -> (x[:gen], x[:op])) |> splat(Dict)
   return shifted_repr |> filter_with(x -> !mov_like(x[:op])) |>
   map_with(x -> line_paths(x, op_map)) |> filter_with(x ->
