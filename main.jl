@@ -69,7 +69,7 @@ function factify_uses(direct, line)
   gen = line[:gen]
   gen_v, gen_i = gen
   uses = map(x -> (x, get(gen_map, x, 0)), line[:uses])
-  new_line = Dict(:op => op, :gen => gen, :uses => uses)
+  new_line = Dict(:op => line[:op], :gen => gen, :uses => uses)
   return ([[new_line] ; acc], union(gen_map, Dict(gen_v => gen_i)) |> splat(Dict))
 end
 
