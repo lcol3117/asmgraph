@@ -1,5 +1,5 @@
 multiple(fq) = fq -> mq -> bq -> foldl(|>, map(fq, mq), init=bq)
-partial(fq) = aq -> xq -> f(xq, aq)
+partial(fq) = aq -> xq -> fq(xq, aq)
 exval(xq) = xq != nothing
 until_last(xq) = xq |> Iterators.reverse |> Iterators.peel |> Iterators.reverse
 nget(xq, vq) = get(xq, vq, nothing)
