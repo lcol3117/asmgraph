@@ -64,7 +64,7 @@ function mov_shifting(flow, basic_repr)
   map(x -> union(x, Dict(:uses => map(s -> (s == from) ? to : s, x[:uses])), basic_repr))
 end
 
-function factify_uses(line, direct)
+function factify_uses(direct, line)
   acc, gen_map = direct
   gen = line[:gen]
   gen_v, gen_i = gen
