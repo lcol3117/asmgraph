@@ -1,4 +1,4 @@
-multiple(fq) = fq -> mq -> bq -> foldl(|>, map(fq, mq), init=bq)
+multiple(fq) = mq -> bq -> foldl(|>, map(fq, mq), init=bq)
 partial(fq) = aq -> xq -> fq(xq, aq)
 exval(xq) = xq != nothing
 until_last(xq) = xq |> Iterators.reverse |> Iterators.peel |> Iterators.reverse
@@ -136,7 +136,7 @@ function op_shift(line)
 end
 
 function graph(asm, opcodes)
-  basic_repr = asm |> (replace |> partial |> multiple)([
+  basic_repr = (replace |> partial |> multiple)([
     "al" => "eax", "ah" => "eax", "ax" => "eax",
     "bl" => "ebx", "bh" => "ebx", "bx" => "ebx",
     "cl" => "ecx", "ch" => "ecx", "cx" => "ecx",
