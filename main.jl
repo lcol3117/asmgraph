@@ -173,7 +173,7 @@ end
 function graph_adj(asm, opcodes)
   return asm |> partial(graph)(opcodes) |> map_with(x ->
     let (source, target, class) = x
-      (length(opcodes) * source) + target => class
+      ((length(opcodes) * source) + target) => class
     end
   ) |> splat(Dict)
 end
@@ -186,8 +186,7 @@ close(io_opcodes_csv)
 opcodes = opcodes_csv |> split_with("\n") |> filter_with(x -> x != "") |>
 enumerate |> map_with(x ->
   let (index, cs) = x
-    println(cs)
-    map(s -> s => index, split(cs, ","))
+    cs |> split_with(",") |> map(s -> (s => index))
   end
 ) |> Iterators.flatten |> splat(Dict)
 
