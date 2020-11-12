@@ -9,24 +9,11 @@ map_with(fq) = xq -> map(fq, xq)
 split_with(delimq) = xq -> split(xq, delimq)
 Iterators.rest(itrq::Iterators.Rest, stateq) = Iterators.Rest(itrq.itr, stateq)
 
-function PairExpr(x)
-  return quote
-    $(Meta.quot(x)) => $x
-  end
-end
-
-macro MakeDict(args...)
-  dict_args = args |> map_with(PairExpr) |> collect
-  return quote
-    Dict($(dict_args...))
-  end
-end
-
 function read_asm_line(text)
   op, args = text |> lowercase |> split_with(" ") |> Iterators.peel
   gen, unmod = args |> collect |> join |> split_with(",") |> Iterators.peel
   uses = [[gen] ; unmod]
-  return @MakeDict op gen uses
+  return Dict(:op => op, :gen => gen, :uses => uses)
 end
 
 function opcode_index(opcode, opcodes)
@@ -82,7 +69,7 @@ function factify_uses(line, direct)
   gen = line[:gen]
   gen_v, gen_i = gen
   uses = map(x -> (x, get(gen_map, x, 0)), line[:uses])
-  new_line = @MakeDict op gen uses
+  new_line = Dict(:op => op, :gen => gen, :uses => uses)
   return ([[new_line] ; acc], push(gen_map, gen_v, gen_i))
 end
 
