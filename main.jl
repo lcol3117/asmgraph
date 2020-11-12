@@ -118,7 +118,7 @@ const shifts = [
 function op_shift(s_line)
   f_unit = (line, flow) ->
     let (from, to) = flow
-      (line[:op] == from) ? push(line, Dict(:op => to)) : line
+      (line[:op] == from) ? union(line, Dict(:op => to)) : line
     end
   return foldl(f_unit, shifts, init=s_line)
 end
@@ -131,6 +131,7 @@ const r_mods = [
   r";.*\n" => "\n", "sysenter" => "syscall",
   "syscall" => "int 0x80, eax, ebx, ecx, edx"
 ]
+
 function graph(asm, opcodes)
   start = foldl(replace, r_mods, init=asm)
   basic_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
@@ -138,7 +139,7 @@ function graph(asm, opcodes)
     occursin("nop", x[:op])
   ) |> map_with(op_shift) |> enumerate |> map_with(x ->
     let (index, line) = x
-      push(line, Dict(:gen => (line[:gen], index)))
+      union(line, Dict(:gen => (line[:gen], index)))
     end
   ) |> foldl_with(factify_uses, init=([],Dict())) |>
   first |> collect |> reverse
