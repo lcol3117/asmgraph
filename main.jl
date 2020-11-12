@@ -197,7 +197,7 @@ enumerate |> collect |> map_with(x ->
   catch _
     nothing
   end
-) |> Iterators.flatten |> filter_with(exval) |> splat(Dict)
+) |> Iterators.flatten |> collect |> filter_with(exval) |> splat(Dict)
 
 """
 dec ecx ; this is a comment
