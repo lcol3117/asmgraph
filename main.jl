@@ -148,7 +148,7 @@ function graph(asm, opcodes)
   foldl_with(mov_shifting, init=basic_repr) |> filter_with(x -> !mov_like(x[:op]))
   op_map = shifted_repr |> map_with(x -> (x[:gen], x[:op])) |> splat(Dict)
   return shifted_repr |> filter_with(x -> !mov_like(x[:op])) |>
-  (line_paths |> partial |> map_with) |> filter_with(x ->
+  map_with(x -> line_paths(x, op_map)) |> filter_with(x ->
     let (_, targets, _) = x
       targets |> collect |> isempty |> !
     end
