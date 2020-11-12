@@ -143,6 +143,7 @@ function graph(asm, opcodes)
     end
   ) |> foldl_with(factify_uses, init=([],Dict())) |>
   first |> collect |> reverse
+  println(typeof(basic_repr))
   shifted_repr = basic_repr |> filter_with(x -> mov_like(x[:op])) |>
   map_with(x -> (x[:gen], Iterators.peel(x[:uses]))) |>
   foldl_with(mov_shifting, init=basic_repr) |> filter_with(x -> !mov_like(x[:op]))
