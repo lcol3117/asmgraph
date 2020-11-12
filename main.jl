@@ -179,31 +179,16 @@ function graph_adj(asm, opcodes)
 end
 
 
-io_opcodes_csv = open("opcodes.csv", "r")
-opcodes_csv = read(io_opcodes_csv, String)
+io_opcodes_csv = open("opcodes.csv")
+opcodes_csv = io_opcodes_csv |> read |> String
 close(io_opcodes_csv)
 
-println(opcodes_csv)
-println(opcodes_csv |> split_with("\n"))
-println("yee")
-
-sp(x) = let
-	println(x)
-	x
-end
-
 opcodes = opcodes_csv |> split_with("\n") |> filter_with(x -> x != "") |>
-enumerate |> collect |> sp |> map_with(x ->
+enumerate |> collect |> map_with(x ->
   let (index, cs) = x
-    if isa(cs, String)
-      println("yeet")
-      cs |> typeof |> println
-      cs |> split_with(",") |> map_with(s -> (s => index))
-    else
-      []
-    end
+    cs |> split_with(",") |> map_with(s -> (s => index))
   end
-) |> Iterators.flatten |> splat(Dict)
+) |> Iterators.flatten |> collect |> splat(Dict)
 
 """
 dec ecx ; this is a comment
