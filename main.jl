@@ -192,6 +192,7 @@ opcodes = opcodes_csv |> split_with("\n") |> filter_with(x -> x != "") |>
 enumerate |> collect |> map_with(x ->
   let (index, cs) = x
     if isa(cs, String)
+      cs |> typeof |> println
       cs |> split_with(",") |> map_with(s -> (s => index))
     else
       []
