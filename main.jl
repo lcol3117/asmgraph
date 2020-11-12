@@ -61,7 +61,7 @@ end
 
 function mov_shifting(flow, basic_repr)
   from, to = flow
-  map(x -> push(x, :uses => map(s -> (s == from) ? to : s, x[:uses])), basic_repr)
+  map(x -> union(x, Dict(:uses => map(s -> (s == from) ? to : s, x[:uses])), basic_repr))
 end
 
 function factify_uses(line, direct)
@@ -70,7 +70,7 @@ function factify_uses(line, direct)
   gen_v, gen_i = gen
   uses = map(x -> (x, get(gen_map, x, 0)), line[:uses])
   new_line = Dict(:op => op, :gen => gen, :uses => uses)
-  return ([[new_line] ; acc], push(gen_map, gen_v, gen_i))
+  return ([[new_line] ; acc], union(gen_map, Dict(gen_v => gen_i)))
 end
 
 const shifts = [
@@ -118,7 +118,7 @@ const shifts = [
 function op_shift(s_line)
   f_unit = (line, flow) ->
     let (from, to) = flow
-      (line[:op] == from) ? push(line, :op => to) : line
+      (line[:op] == from) ? push(line, Dict(:op => to)) : line
     end
   return foldl(f_unit, shifts, init=s_line)
 end
@@ -138,7 +138,7 @@ function graph(asm, opcodes)
     occursin("nop", x[:op])
   ) |> map_with(op_shift) |> enumerate |> map_with(x ->
     let (index, line) = x
-      push(line, :gen => (line[:gen], index))
+      push(line, Dict(:gen => (line[:gen], index)))
     end
   ) |> foldl_with(factify_uses, init=([],Dict())) |>
   first |> collect |> reverse
