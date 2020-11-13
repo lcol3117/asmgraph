@@ -22,17 +22,17 @@ end
 
 function reg_class(reg)
   segm_regs = [
-	    "cs", "ds", "es",
-	    "fs", "gs", "ss"
-	]
-	instr_ptr = [
-	    "ip", "eip", "rip"
-	]
+      "cs", "ds", "es",
+      "fs", "gs", "ss"
+  ]
+  instr_ptr = [
+      "ip", "eip", "rip"
+  ]
   instr_regs = [
     "eax", "ebx",
     "ecx", "edx"
   ]
-	repr_num =
+  repr_num =
     if reg == "0x80"
       -2
     elseif reg in instr_ptr
@@ -130,10 +130,10 @@ function graph(asm, opcodes)
     end
   ) |> map_with(x -> let (source, targets, (reg, _)) = x
     (source, targets, reg_class(reg))
-	end) |> filter_with(x -> isa(x[2], AbstractString)) |> unique |>
+  end) |> filter_with(x -> isa(x[2], AbstractString)) |> unique |>
   map_with(x -> let (source, targets, class) = x
       map(s -> (opcode_index(source, opcodes), opcode_index(s, opcodes), class))
-  end) |> collect |> x -> let; println("YAYAYAYAYY!"); x; end
+  end) |> collect |> (x -> let; println("YAYAYAYAYY!"); x; end)
 end
 
 function graph_adj(asm, opcodes)
@@ -164,4 +164,4 @@ movzx edx, eax
 imul ecx, edx
 hint_nop7
 syscall
-""" |> partial(graph_adj)(opcodes) |> println
+""" |> partial(graph)(opcodes) |> println
