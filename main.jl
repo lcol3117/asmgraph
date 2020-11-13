@@ -161,7 +161,7 @@ function graph(asm, opcodes)
   foldl_with(mov_shifting, init=basic_repr) |> Iterators.flatten |> collect |>
   filter_with(x -> !mov_like(x[:op]))
   @show shifted_repr
-  op_map = shifted_repr |> map_with(x -> (x[:gen], x[:op])) |> splat(Dict)
+  op_map = shifted_repr |> map_with(x -> (x[:gen] => x[:op])) |> splat(Dict)
   return shifted_repr |> filter_with(x -> !mov_like(x[:op])) |>
   map_with(x -> line_paths(x, op_map)) |> filter_with(x ->
     let (_, targets, _) = x
