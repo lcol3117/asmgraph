@@ -10,9 +10,9 @@ split_with(delimq) = xq -> split(xq, delimq)
 Iterators.rest(itrq::Iterators.Rest, stateq) = Iterators.Rest(itrq.itr, stateq)
 
 function read_asm_line(text)
-  op, args = text |> lowercase |> split_with(" ") |> Iterators.peel |> collect
-  gen, unmod = args |> collect |> join |> split_with(",") |> Iterators.peel |> collect
-  uses = [[gen] ; unmod]
+  op, args = text |> lowercase |> split_with(" ") |> Iterators.peel
+  gen, unmod = args |> collect |> join |> split_with(",") |> Iterators.peel
+  uses = [[gen] ; collect(unmod)]
   @show op
   @show gen
   @show uses
