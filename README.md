@@ -1,14 +1,14 @@
 # asmgraph
-Converts assembly to a graph of operations. Written in Elixir.
+Converts assembly to a graph of operations. Written in Julia.
 
-`AsmGraph.graph(asm_string, opcodes)` -> `[{link_from, link_to}, link_class}]`
+`graph(asm_string, opcodes)` -> `[(link_from, link_to, link_class)]`of type `Array{Tuple{Number},1}`
 
-`AsmGraph.graph_adj/2` represents a flattened sparse adjacency matrix as:
-`AsmGraph.graph_adj(asm_string, opcodes)` -> `[{dimension, value}]`
+`graph_adj` represents a flattened sparse adjacency matrix as:
+`graph_adj(asm_string, opcodes)` -> `Dict(dimension => value)` of type `Dict{Number,Number}`
 
 `opcodes` is a map from `String` (an opcode) to unsigned `Integer` (the number to associate with that opcode)
 
-Note that all elements of the result are unsigned integers except for `link_class`, which is signed. 
+Note that all elements of the result are unsigned integers except for `link_class` and `value`, which is signed. 
 
 Steps:
 
