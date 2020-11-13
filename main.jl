@@ -60,7 +60,7 @@ function line_paths(l, op_map)
   @show fact_timecode
   @show l
   dd_targets = nget(op_map, (d_op, fact_timecode))
-  return (l[:op], exval(dd_targets) ? dd_targets : l[:targets], l[:gen])
+  return (l[:op], exval(dd_targets) ? dd_targets : l[:uses], l[:gen])
 end
 
 function mov_like(op)
