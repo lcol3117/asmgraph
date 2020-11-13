@@ -62,7 +62,7 @@ function mov_like(op)
   occursin("mov", op) || (op == "lea")
 end
 
-function mov_shifting(flow, basic_repr)
+function mov_shifting(basic_repr, flow)
   @show flow
   @show typeof(flow)
   @show basic_repr
