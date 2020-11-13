@@ -141,7 +141,7 @@ const r_mods = [
   "syscall" => "int 0x80, eax, ebx, ecx, edx"
 ]
 
-sp(x) = let; println(x); x; end
+sp(msg) = x -> let; println(msg); println(x); x; end
 
 function graph(asm, opcodes)
   start = foldl(replace, r_mods, init=asm)
@@ -163,13 +163,13 @@ function graph(asm, opcodes)
   @show shifted_repr
   op_map = shifted_repr |> map_with(x -> (x[:gen] => x[:op])) |> splat(Dict)
   return shifted_repr |> filter_with(x -> !mov_like(x[:op])) |>
-  map_with(x -> line_paths(x, op_map)) |>sp|> filter_with(x ->
+  map_with(x -> line_paths(x, op_map)) |>sp("after line_paths:")|> filter_with(x ->
     let (_, targets, _) = x
       targets |> collect |> isempty |> !
     end
-  ) |>sp|> map_with(x -> let (source, targets, (reg, _)) = x
+  ) |>sp("after filtered out no targets: ")|> map_with(x -> let (source, targets, (reg, _)) = x
     (source, unique(targets), reg_class(reg))
-  end) |>sp|> unique |> map_with(x -> let (source, targets, class) = x
+  end) |>sp("mapped to nsub 3-tuple")|> unique |> map_with(x -> let (source, targets, class) = x
       map(s -> (opcode_index(source, opcodes), opcode_index(s, opcodes), class))
   end) |> collect
   #Iterators.flatten
