@@ -54,6 +54,7 @@ function reg_class(reg)
 end
 
 function line_paths(l, op_map)
+  @show op_map
   targets = l[:uses] |> map_with(x -> nget(op_map, x)) |> filter_with(exval)
   return (l[:op], targets, l[:gen])
 end
