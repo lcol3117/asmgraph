@@ -63,8 +63,14 @@ function mov_like(op)
 end
 
 function mov_shifting(flow, basic_repr)
+  @show flow
+  @show typeof(flow)
+  @show basic_repr
+  @show typeof(basic_repr)
   from, to = flow
-  map(x -> union(x, Dict(:uses => map(s -> (s == from) ? to : s, x[:uses])) |> splat(Dict), basic_repr))
+  s_mod = s -> ((s == from) ? to : s)
+  u_mod = x -> s -> union(x, Dict(:uses => s_mod(s))) |> splat(Dict)
+  map(x -> map(u_mod(x)), x[:uses]), basic_repr))
 end
 
 function factify_uses(direct, line)
