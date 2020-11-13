@@ -152,9 +152,10 @@ function graph(asm, opcodes)
     let (index, line) = x
       union(line, Dict(:gen => (line[:gen], index))) |> splat(Dict)
     end
-  ) |> foldl_with(factify_uses, init=([],Dict())) |>
-  first |> collect
+  ) |> foldl_with(factify_uses, init=([],Dict())) |> first |> collect
   @show basic_repr
+  println("yeet?")
+  println(basic_repr)
   shifted_repr = basic_repr |> filter_with(x -> mov_like(x[:op])) |>
   map_with(x -> (x[:gen], Iterators.peel(x[:uses]) |> collect)) |>
   foldl_with(mov_shifting, init=basic_repr) |> filter_with(x -> !mov_like(x[:op]))
