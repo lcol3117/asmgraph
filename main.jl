@@ -31,24 +31,28 @@ function reg_class(reg)
 	instr_ptr = [
 	    "ip", "eip", "rip"
 	]
+  instr_regs = [
+    "eax", "ebx",
+    "ecx", "edx"
+  ]
 	repr_num =
-  if reg == "0x80"
-    -2
-  elseif reg in instr_ptr
-    -1
-  elseif reg in segm_regs
-    1
-  elseif (reg == "ebp" || reg == "esp")
-    2
-  elseif reg in instr_regs
-    3
-  elseif match(r"^0x.*$", reg)
-    4
-  elseif match(r"^\d+", reg)
-    5
-  else
-    6
-  end
+    if reg == "0x80"
+      -2
+    elseif reg in instr_ptr
+      -1
+    elseif reg in segm_regs
+      1
+    elseif (reg == "ebp" || reg == "esp")
+      2
+    elseif reg in instr_regs
+      3
+    elseif match(r"^0x.*$", reg)
+      4
+    elseif match(r"^\d+", reg)
+      5
+    else
+      6
+    end
   deref_count = count(partial(==)("["), reg)
   return repr_num + (deref_count * 7)
 end
