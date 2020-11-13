@@ -171,7 +171,7 @@ function graph(asm, opcodes)
   filter_with(x -> !mov_like(x[:op]))
   @show shifted_repr
   op_map = shifted_repr |> map_with(x -> (x[:gen] => x[:op])) |> splat(Dict)
-  return shifted_repr |> filter_with(x -> !mov_like(x[:op])) |>
+  r_basis = shifted_repr |> filter_with(x -> !mov_like(x[:op])) |>
   map_with(x -> line_paths(x, op_map)) |>sp("after line_paths:")|> filter_with(x ->
     let (_, targets, _) = x
       targets |> collect |> isempty |> !
@@ -181,6 +181,8 @@ function graph(asm, opcodes)
   end) |>sp("mapped to nsub 3-tuple")|> unique |> map_with(x -> let (source, targets, class) = x
       map(s -> (opcode_index(source, opcodes), opcode_index(s, opcodes), class))
   end) |> collect
+  @show r_basis
+  r_basis
   #Iterators.flatten
 end
 
