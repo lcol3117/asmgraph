@@ -13,9 +13,6 @@ function read_asm_line(text)
   op, args = text |> lowercase |> split_with(" ") |> Iterators.peel
   gen, unmod = args |> collect |> join |> split_with(",") |> Iterators.peel
   uses = [[gen] ; collect(unmod)]
-  @show op
-  @show gen
-  @show uses
   return Dict(:op => op, :gen => gen, :uses => uses)
 end
 
@@ -58,11 +55,7 @@ function reg_class(reg)
 end
 
 function line_paths(l, op_map)
-  @show op_map
   (d_op, fact_timecode) = l[:uses]
-  @show d_op
-  @show fact_timecode
-  @show l
   dd_targets = nget(op_map, (d_op, fact_timecode))
   return (l[:op], exval(dd_targets) ? dd_targets : l[:uses], l[:gen])
 end
@@ -72,10 +65,6 @@ function mov_like(op)
 end
 
 function mov_shifting(basic_repr, flow)
-  @show flow
-  @show typeof(flow)
-  @show basic_repr
-  @show typeof(basic_repr)
   from, to = flow
   s_mod = s -> ((s == from) ? to : s)
   u_mod = x -> s -> union(x, Dict(:uses => s_mod(s))) |> splat(Dict)
@@ -92,45 +81,14 @@ function factify_uses(direct, line)
 end
 
 const shifts = [
-  ("jz", "je"),
-  ("jnz", "jne"),
-  ("iretd", "iret"),
-  ("jnbe", "ja"),
-  ("jnb", "jae"),
-  ("jnae", "jb"),
-  ("jna", "jbe"),
-  ("jecxz", "jcxz"),
-  ("jnle", "jg"),
-  ("jnl", "jge"),
-  ("jnge", "jl"),
-  ("jng", "jle"),
-  ("jp", "jpe"),
-  ("jnp", "jpo"),
-  ("loopz", "loope"),
-  ("loopnz", "loopne"),
-  ("popad", "popa"),
-  ("popfd", "popf"),
-  ("pushad", "pusha"),
-  ("pushfd", "pushf"),
-  ("repz", "repe"),
-  ("repnz", "repne"),
-  ("retf", "ret"),
-  ("shl", "sal"),
-  ("setnbe", "seta"),
-  ("setnb", "setae"),
-  ("setnae", "setb"),
-  ("setna", "setbe"),
-  ("setz", "sete"),
-  ("setnz", "setne"),
-  ("setnge", "setl"),
-  ("setng", "setle"),
-  ("setnle", "setg"),
-  ("setnl", "setge"),
-  ("setp", "setpe"),
-  ("setnp", "setpo"),
-  ("shld", "shrd"),
-  ("fwait", "wait"),
-  ("xlatb", "xlat")
+  ("jz", "je"), ("jnz", "jne"), ("iretd", "iret"), ("jnbe", "ja"), ("jnb", "jae"),
+  ("jnae", "jb"), ("jna", "jbe"), ("jecxz", "jcxz"), ("jnle", "jg"), ("jnl", "jge"),
+  ("jnge", "jl"), ("jng", "jle"), ("jp", "jpe"), ("jnp", "jpo"), ("loopz", "loope"),
+  ("loopnz", "loopne"), ("popad", "popa"), ("popfd", "popf"), ("pushad", "pusha"), ("pushfd", "pushf"),
+  ("repz", "repe"), ("repnz", "repne"), ("retf", "ret"),("shl", "sal"), ("setnbe", "seta"),
+  ("setnb", "setae"), ("setnae", "setb"), ("setna", "setbe"), ("setz", "sete"), ("setnz", "setne"),
+  ("setnge", "setl"), ("setng", "setle"), ("setnle", "setg"), ("setnl", "setge"), ("setp", "setpe"),
+  ("setnp", "setpo"), ("shld", "shrd"), ("fwait", "wait"), ("xlatb", "xlat")
 ]
 
 function op_shift(s_line)
@@ -142,15 +100,13 @@ function op_shift(s_line)
 end
 
 const r_mods = [
-  r"\Wal" => "eax", r"\Wah" => "eax", r"\Wax" => "eax",
-  r"\Wbl" => "ebx", r"\Wbh" => "ebx", r"\Wbx" => "ebx",
-  r"\Wcl" => "ecx", r"\Wch" => "ecx", r"\Wcx" => "ecx",
-  r"\Wdl" => "edx", r"\Wdh" => "edx", r"\Wdx" => "edx",
+  r"\Wal" => "eax", r"\Wah" => "eax", r"\Wax" => "eax", r"\Wrax" => "eax",
+  r"\Wbl" => "ebx", r"\Wbh" => "ebx", r"\Wbx" => "ebx", r"\Wrbx" => "ebx",
+  r"\Wcl" => "ecx", r"\Wch" => "ecx", r"\Wcx" => "ecx", r"\Wrcx" => "ecx",
+  r"\Wdl" => "edx", r"\Wdh" => "edx", r"\Wdx" => "edx", r"\Wrdx" => "edx",
   r";.*\n" => "\n", "sysenter" => "syscall",
   "syscall" => "int 0x80, eax, ebx, ecx, edx"
 ]
-
-sp(msg) = x -> let; println(msg); println(x); x; end
 
 function graph(asm, opcodes)
   start = foldl(replace, r_mods, init=asm)
@@ -162,28 +118,22 @@ function graph(asm, opcodes)
       union(line, Dict(:gen => (line[:gen], index))) |> splat(Dict)
     end
   ) |> foldl_with(factify_uses, init=([],Dict())) |> first |> collect
-  @show basic_repr
-  println("yeet?")
-  println(basic_repr)
   shifted_repr = basic_repr |> filter_with(x -> mov_like(x[:op])) |>
   map_with(x -> (x[:gen], Iterators.peel(x[:uses]) |> collect)) |>
   foldl_with(mov_shifting, init=basic_repr) |> Iterators.flatten |> collect |>
   filter_with(x -> !mov_like(x[:op]))
-  @show shifted_repr
   op_map = shifted_repr |> map_with(x -> (x[:gen] => x[:op])) |> splat(Dict)
-  r_basis = shifted_repr |> filter_with(x -> !mov_like(x[:op])) |>
-  map_with(x -> line_paths(x, op_map)) |>sp("after line_paths:")|> filter_with(x ->
+  return shifted_repr |> filter_with(x -> !mov_like(x[:op])) |>
+  map_with(x -> line_paths(x, op_map)) |> filter_with(x ->
     let (_, targets, _) = x
       targets |> collect |> isempty |> !
     end
-  ) |>sp("after filtered out no targets: ")|> map_with(x -> let (source, targets, (reg, _)) = x
+  ) |> map_with(x -> let (source, targets, (reg, _)) = x
     (source, targets, reg_class(reg))
-  end) |> filter_with(x -> isa(x[2], AbstractString)) |>sp("mapped to nsub 3-tuple")|> unique |> map_with(x -> let (source, targets, class) = x
+  end) |> filter_with(x -> isa(x[2], AbstractString)) |> unique
+  |> map_with(x -> let (source, targets, class) = x
       map(s -> (opcode_index(source, opcodes), opcode_index(s, opcodes), class))
-  end) |> collect
-  @show r_basis
-  r_basis
-  #Iterators.flatten
+  end) |> collect |> x -> let; println("YAYAYAYAYY!"); x; end
 end
 
 function graph_adj(asm, opcodes)
