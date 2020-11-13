@@ -132,7 +132,7 @@ function graph(asm, opcodes)
     (source, targets, reg_class(reg))
   end) |> filter_with(x -> isa(x[2], AbstractString)) |> unique |>
   map_with(x -> let (source, targets, class) = x
-      (opcode_index(source, opcodes), opcode_index(s, opcodes), class)
+      map(s -> (opcode_index(source, opcodes), opcode_index(s, opcodes), class), targets)
   end) |> collect |> (x -> let; println("YAYAYAYAYY!"); x; end)
 end
 
