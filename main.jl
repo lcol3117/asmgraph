@@ -58,6 +58,7 @@ function line_paths(l, op_map)
   (ops, fact_timecode) = l[:uses]
   @show ops
   @show fact_timecode
+  @show l
   targets = ops |> map_with(x -> nget(op_map, (x, fact_timecode))) |> filter_with(exval)
   return (l[:op], targets, l[:gen])
 end
