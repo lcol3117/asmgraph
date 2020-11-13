@@ -127,10 +127,10 @@ function op_shift(s_line)
 end
 
 const r_mods = [
-  "al" => "eax", "ah" => "eax", "ax" => "eax",
-  "bl" => "ebx", "bh" => "ebx", "bx" => "ebx",
-  "cl" => "ecx", "ch" => "ecx", "cx" => "ecx",
-  "dl" => "edx", "dh" => "edx", "dx" => "edx",
+  r"\Wal" => "eax", r"\Wah" => "eax", r"\Wax" => "eax",
+  r"\Wbl" => "ebx", r"\Wbh" => "ebx", r"\Wbx" => "ebx",
+  r"\Wcl" => "ecx", r"\Wch" => "ecx", r"\Wcx" => "ecx",
+  r"\Wdl" => "edx", r"\Wdh" => "edx", r"\Wdx" => "edx",
   r";.*\n" => "\n", "sysenter" => "syscall",
   "syscall" => "int 0x80, eax, ebx, ecx, edx"
 ]
