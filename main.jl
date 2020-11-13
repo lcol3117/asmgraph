@@ -178,7 +178,7 @@ function graph(asm, opcodes)
     end
   ) |>sp("after filtered out no targets: ")|> map_with(x -> let (source, targets, (reg, _)) = x
     (source, targets, reg_class(reg))
-  end) |> filter_with(x -> !isa(x[2], Tuple)) |>sp("mapped to nsub 3-tuple")|> unique |> map_with(x -> let (source, targets, class) = x
+	end) |> filter_with(x -> isa(x[2], String)) |>sp("mapped to nsub 3-tuple")|> unique |> map_with(x -> let (source, targets, class) = x
       map(s -> (opcode_index(source, opcodes), opcode_index(s, opcodes), class))
   end) |> collect
   @show r_basis
