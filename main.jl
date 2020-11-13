@@ -138,7 +138,7 @@ function graph(asm, opcodes)
   start = foldl(replace, r_mods, init=asm)
   basic_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
   map_with(read_asm_line) |> filter_with(x ->
-    occursin("nop", x[:op])
+    !occursin("nop", x[:op])
   ) |> map_with(op_shift) |> enumerate |> map_with(x ->
     let (index, line) = x
       union(line, Dict(:gen => (line[:gen], index))) |> splat(Dict)
