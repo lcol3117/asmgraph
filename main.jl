@@ -158,7 +158,7 @@ function graph(asm, opcodes)
   println(basic_repr)
   shifted_repr = basic_repr |> filter_with(x -> mov_like(x[:op])) |>
   map_with(x -> (x[:gen], Iterators.peel(x[:uses]) |> collect)) |>
-  foldl_with(mov_shifting, init=basic_repr) |> filter_with(x -> !mov_like(x[:op]))
+  foldl_with(mov_shifting, init=basic_repr) |>sp|> filter_with(x -> !mov_like(x[:op]))
   @show shifted_repr
   op_map = shifted_repr |> map_with(x -> (x[:gen], x[:op])) |> splat(Dict)
   return shifted_repr |> filter_with(x -> !mov_like(x[:op])) |>
