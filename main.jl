@@ -133,7 +133,7 @@ function graph(asm, opcodes)
   end) |> filter_with(x -> isa(x[2], AbstractString)) |> unique |>
   map_with(x -> let (source, target, class) = x
       (opcode_index(source, opcodes), opcode_index(target, opcodes), class)
-  end) |> collect |> (x -> let; println("YAYAYAYAYY!"); x; end)
+  end) |> collect
 end
 
 function graph_adj(asm, opcodes)
@@ -164,4 +164,4 @@ movzx edx, eax
 imul ecx, edx
 hint_nop7
 syscall
-""" |> partial(graph)(opcodes) |> println
+""" |> partial(graph_adj)(opcodes) |> println
