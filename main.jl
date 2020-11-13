@@ -13,6 +13,9 @@ function read_asm_line(text)
   op, args = text |> lowercase |> split_with(" ") |> Iterators.peel |> collect
   gen, unmod = args |> collect |> join |> split_with(",") |> Iterators.peel |> collect
   uses = [[gen] ; unmod]
+  @show op
+  @show gen
+  @show uses
   return Dict(:op => op, :gen => gen, :uses => uses)
 end
 
