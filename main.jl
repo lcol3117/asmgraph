@@ -103,7 +103,7 @@ const r_mods = [
   r"\Wdl" => "edx", r"\Wdh" => "edx", r"\Wdx" => "edx", r"\Wrdx" => "edx",
   r";.*\n" => "\n", "sysenter" => "syscall", r"\Wrsp" => "esp", r"\Wrbp" => "ebp",
   r"\Wrip" => "eip", "syscall" => "int 0x80, eax, ebx, ecx, edx",
-  r"push" => "push esp, ebp"
+  r"push (?<a>.*\ )" => s"push \g<a> esp, ebp", r"pop" => s"pop \g<a> esp, ebp"
 ]
 
 function graph(asm, opcodes)
