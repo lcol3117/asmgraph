@@ -111,6 +111,7 @@ function graph(asm, opcodes)
     [[r"(\[eip.*\]|eip)" => "eip", r"(\[esp.*\]|esp)" => "esp", r"(\[ebp.*\]|ebp)" => "ebp"] ; r_mods],
     init=asm
   )
+  @show start
   basic_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
   map_with(read_asm_line) |> filter_with(x ->
     !occursin("nop", x[:op])
