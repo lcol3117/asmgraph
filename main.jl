@@ -25,9 +25,6 @@ function reg_class(reg)
       "cs", "ds", "es",
       "fs", "gs", "ss"
   ]
-  instr_ptr = [
-      "ip", "eip", "rip"
-  ]
   instr_regs = [
     "eax", "ebx",
     "ecx", "edx"
@@ -35,7 +32,7 @@ function reg_class(reg)
   repr_num =
     if reg == "0x80"
       -2
-    elseif reg in instr_ptr
+    elseif reg == "eip"
       -1
     elseif reg in segm_regs
       1
@@ -104,12 +101,16 @@ const r_mods = [
   r"\Wbl" => "ebx", r"\Wbh" => "ebx", r"\Wbx" => "ebx", r"\Wrbx" => "ebx",
   r"\Wcl" => "ecx", r"\Wch" => "ecx", r"\Wcx" => "ecx", r"\Wrcx" => "ecx",
   r"\Wdl" => "edx", r"\Wdh" => "edx", r"\Wdx" => "edx", r"\Wrdx" => "edx",
-  r";.*\n" => "\n", "sysenter" => "syscall",
-  "syscall" => "int 0x80, eax, ebx, ecx, edx"
+  r";.*\n" => "\n", "sysenter" => "syscall", r"\Wrsp" => "esp", r"\Wrbp" => "ebp",
+  r"\Wrip" => "eip", "syscall" => "int 0x80, eax, ebx, ecx, edx",
+  r"push" => "push esp, ebp"
 ]
 
 function graph(asm, opcodes)
-  start = foldl(replace, r_mods, init=asm)
+  start = foldl(replace,
+    [[r"(\[eip.*\]|eip)" => "eip", r"(\[esp.*\]|esp)" => "esp", r"(\[ebp.*\]|ebp)" => "ebp"] ; r_mods],
+    init=asm
+  )
   basic_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
   map_with(read_asm_line) |> filter_with(x ->
     !occursin("nop", x[:op])
@@ -163,5 +164,8 @@ xlatb eax
 movzx edx, eax
 imul ecx, edx
 hint_nop7
+syscall
+mov ebx, [esp]
+pop eax
 syscall
 """ |> partial(graph_adj)(opcodes) |> println
