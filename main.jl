@@ -63,7 +63,8 @@ function mov_like(op)
 end
 
 function mov_shifting(basic_repr_raw, flow)
-  basic_repr = Iterators.flatten(basic_repr_raw)
+  @show map(typeof, basic_repr_raw) |> unique
+  basic_repr = [Dict(:op => "xor", :gen => ("eax", 5), :uses => [("ebx", 1)]), Dict(:op => "sub", :gen => ("eax", 6), :uses => [("ecx", 2)])] # map(std_basic_repr, basic_repr_raw)
   from, to = flow
   s_mod = s -> ((s == from) ? to : s)
   u_mod = x -> s -> union(x, Dict(:uses => s_mod(s))) |> splat(Dict)
