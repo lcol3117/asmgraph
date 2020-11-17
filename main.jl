@@ -68,7 +68,7 @@ function mov_shifting(basic_repr_raw, flow)
   from, to = flow
   s_mod = s -> ((s == from) ? to : s)
   u_mod = x -> s -> union(x, Dict(:uses => s_mod(s))) |> splat(Dict)
-  return map(x -> map(u_mod(x), nget(x, :uses)), basic_repr) |> filter(exval)
+  return map(x -> map(u_mod(x), x[:uses]), basic_repr)
 end
 
 function factify_uses(direct, line)
