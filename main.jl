@@ -2,6 +2,7 @@ partial(fq) = aq -> xq -> fq(xq, aq)
 exval(xq) = xq != nothing
 until_last(xq) = xq |> Iterators.reverse |> Iterators.peel |> Iterators.reverse
 nget(xq, vq) = get(xq, vq, nothing)
+nget(xq::Pair{Symbol,Any}, _vq::Symbol) = xq
 splat(fq) = xq -> fq(xq...)
 foldl_with(fq; kwq...) = xq -> foldl(fq, xq; kwq...)
 filter_with(fq) = xq -> filter(fq, xq)
