@@ -109,14 +109,28 @@ const r_mods = [
   r"push (?<a>.+?)\n" => s"push \g<a>, esp, ebp\n", r"pop (?<a>.+?)\n" => s"pop \g<a>, esp, ebp\n"
 ]
 
+const dir_regexes = [
+  r"\b(byte)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]",
+  r"\b(sbyte)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]",
+  r"\b(word)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]",
+  r"\b(sword)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]",
+  r"\b(dword)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]",
+  r"\b(sdword)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]",
+  r"\b(qword)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]",
+  r"\b(tbyte)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]",
+  r"\b(real4)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]",
+  r"\b(real8)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]",
+  r"\b(real10)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]"
+]
+
 function graph(asm, opcodes)
   start = foldl(replace,
-    [[r"(\[eip.*\]|eip)" => "eip", r"(\[esp.*\]|esp)" => "esp", r"(\[ebp.*\]|ebp)" => "ebp"] ; r_mods],
+    [map(partial(=>)(s" \g<a>"), dir_regexes) ; r_mods],
     init=asm
   )
   @show start
   basic_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
-  map_with(read_asm_line) |> filter_with(x ->
+  replace_with(r"\ \ " => " ") |> map_with(read_asm_line) |> filter_with(x ->
     !occursin("nop", x[:op])
   ) |> map_with(op_shift) |> enumerate |> map_with(x ->
     let (index, line) = x
@@ -169,7 +183,7 @@ movzx edx, eax
 imul ecx, edx
 hint_nop7
 syscall
-mov ebx, [esp]
+mov ebx, byte [esp+0]
 pop eax
 syscall
 """ |> partial(graph_adj)(opcodes) |> println
