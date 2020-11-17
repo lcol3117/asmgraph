@@ -55,9 +55,13 @@ function reg_class(reg)
 end
 
 function line_paths(l, op_map)
-  (d_op, fact_timecode) = l[:uses]
-  dd_targets = nget(op_map, (d_op, fact_timecode))
-  return (l[:op], exval(dd_targets) ? dd_targets : l[:uses], l[:gen])
+  @show l
+  @show op_map
+  @show l[:uses]
+  #(d_op, fact_timecode) = l[:uses]
+  #dd_targets = nget(op_map, (d_op, fact_timecode))
+  #return (l[:op], exval(dd_targets) ? dd_targets : l[:uses], l[:gen])
+  return ("fakeop", "fakeuses", "fakegen")
 end
 
 function mov_like(op)
@@ -136,10 +140,10 @@ function graph(asm, opcodes)
     end
   ) |> map_with(x -> let (source, targets, (reg, _)) = x
     (source, targets, reg_class(reg))
-      end) |> map_with(x -> x |> typeof |> println)#= |> unique |>
+      end) |> filter_with(x -> @eval isa(x[2], AbstractString)) |> unique |>
   map_with(x -> let (source, target, class) = x
       (opcode_index(source, opcodes), opcode_index(target, opcodes), class)
-  end) |> collect=#
+  end) |> collect
 end
 
 function graph_adj(asm, opcodes)
