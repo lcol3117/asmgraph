@@ -62,6 +62,7 @@ function mov_like(op)
 end
 
 function mov_shifting(basic_repr, flow)
+  @show basic_repr
   from, to = flow
   s_mod = s -> ((s == from) ? to : s)
   u_mod = x -> s -> union(x, Dict(:uses => s_mod(s))) |> splat(Dict)
