@@ -136,10 +136,10 @@ function graph(asm, opcodes)
     end
   ) |> map_with(x -> let (source, targets, (reg, _)) = x
     (source, targets, reg_class(reg))
-  end) |> filter_with(x -> isa(x[2], AbstractString)) |> unique |>
+      end) |> map_with(x -> x |> typeof |> println)#= |> unique |>
   map_with(x -> let (source, target, class) = x
       (opcode_index(source, opcodes), opcode_index(target, opcodes), class)
-  end) |> collect
+  end) |> collect=#
 end
 
 function graph_adj(asm, opcodes)
