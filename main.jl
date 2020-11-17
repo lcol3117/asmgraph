@@ -4,6 +4,8 @@ until_last(xq) = xq |> Iterators.reverse |> Iterators.peel |> Iterators.reverse
 nget(xq, vq) = get(xq, vq, nothing)
 nget(xq::Pair{Symbol,Any}, _vq::Symbol) = xq
 splat(fq) = xq -> fq(xq...)
+flatten_arrays(xq) = xq
+flatten_arrays(xq::Array{Array{T,1},1}) where T = xq |> Iterators.flatten |> collect |> flatten_arrays
 foldl_with(fq; kwq...) = xq -> foldl(fq, xq; kwq...)
 filter_with(fq) = xq -> filter(fq, xq)
 map_with(fq) = xq -> map(fq, xq)
@@ -63,7 +65,7 @@ function mov_like(op)
 end
 
 function mov_shifting(basic_repr_raw, flow)
-  basic_repr = basic_repr_raw |> splat(hcat) |> vec
+  basic_repr = flatten_arrays(basic_repr_raw)
   from, to = flow
   s_mod = s -> ((s == from) ? to : s)
   u_mod = x -> s -> union(x, Dict(:uses => s_mod(s))) |> splat(Dict)
