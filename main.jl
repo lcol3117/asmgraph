@@ -61,12 +61,12 @@ function mov_like(op)
   occursin("mov", op) || (op == "lea")
 end
 
-function mov_shifting(basic_repr, flow)
-  @show basic_repr
+function mov_shifting(basic_repr_raw, flow)
+  basic_repr = Iterators.flatten(basic_repr_raw)
   from, to = flow
   s_mod = s -> ((s == from) ? to : s)
   u_mod = x -> s -> union(x, Dict(:uses => s_mod(s))) |> splat(Dict)
-  return map(x -> map(u_mod(x), x[:uses]), basic_repr)
+  return map(x -> map(u_mod(x), nget(x, :uses)), basic_repr) |> filter(exval)
 end
 
 function factify_uses(direct, line)
