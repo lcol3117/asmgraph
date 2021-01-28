@@ -183,7 +183,7 @@ movzx edx, eax
 imul ecx, edx
 hint_nop7
 syscall
-mov ebx, byte [esp+0]
+mov [esp+0], ebx
 pop eax
 syscall
 """ |> partial(graph_adj)(opcodes) |> println
