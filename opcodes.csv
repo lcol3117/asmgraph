@@ -1,4 +1,5 @@
 xorclear
+movactpop, movactpush
 kshiftrb
 vfmsubss
 pmulhrwa
