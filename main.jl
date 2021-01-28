@@ -107,7 +107,8 @@ const r_mods = [
   r";.*\n" => "\n", "sysenter" => "syscall", r"\Wrsp" => "esp", r"\Wrbp" => "ebp",
   r"\Wrip" => "eip", "syscall" => "int 0x80, eax, ebx, ecx, edx",
   r"xor\W+(?<a>\w+),\W+(?P=a)" => s"xorclear \g<a>",
-  r"push\w? (?<a>.+?)\n" => s"movactpush esp, \g<a>, ebp\n", r"pop\w? (?<a>.+?)\n" => s"movactpop \g<a>, esp, ebp\n"
+  r"push\w? (?<a>.+?)\n" => s"movactpush esp, \g<a>, ebp\npush esp, \g<a>, ebp\n",
+  r"pop\w? (?<a>.+?)\n" => s"movactpop \g<a>, esp, ebp\npop \g<a>, esp, ebp\n"
 ]
 
 const dir_regexes = [
