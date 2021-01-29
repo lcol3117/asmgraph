@@ -134,7 +134,7 @@ function graph(asm, opcodes)
     )) |> splat(Dict)
   )
   @show basic_repr
-  links = Dict{Pair{AbstractString,Union{AbstractString,Nothing}},Pair{AbstractString,Union{AbstractString,Nothing}}}()
+  links = Array{Pair{Pair{AbstractString,Union{AbstractString,Nothing}},Pair{AbstractString,Union{AbstractString,Nothing}}}}()
   op_sources = Dict{AbstractString,Pair{AbstractString,Union{AbstractString,Nothing}}}()
   mov_shifting = Dict{AbstractString,AbstractString}()
   stack_refs = Stack{AbstractString}()
@@ -181,8 +181,12 @@ function graph(asm, opcodes)
     end
   end
   @show links
-  return Dict(
-    number_op_pair(k) => number_op_pair(v) for (k, v) in links
+  return map(
+    x -> Pair(map(
+      number_op_pair,
+      x
+    )...),
+    links
   )
 end
 
