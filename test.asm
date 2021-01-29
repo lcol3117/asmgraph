@@ -5,6 +5,6 @@ movzx edx, eax
 imul ecx, edx
 hint_nop7
 syscall
-mov [esp+0], ebx
+push ebx
 pop eax
 syscall
