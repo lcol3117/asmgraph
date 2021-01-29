@@ -203,7 +203,10 @@ enumerate |> collect |> map_with(x ->
 
 function modified_msgpack_pack(x)
   return replace(
-    x |> MsgPack.pack,
+    map(
+      sub -> [sub.first, sub.second],
+      x
+    ) |> Iterators.flatten |> collect |> MsgPack.pack,
     UInt8(0x0A) => UInt8(0xC1)
   )
 end
