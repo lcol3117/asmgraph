@@ -204,6 +204,7 @@ mov [esp+0], ebx
 pop eax
 syscall
 """
+test_asm |> partial(graph)(opcodes) |> println
 test_asm |> partial(graph_adj)(opcodes) |> println
 test_asm |> partial(graph_adj)(opcodes) |> modified_msgpack_pack |> println
 test_asm |> partial(graph_link)(opcodes) |> println
