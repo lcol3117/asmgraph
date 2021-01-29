@@ -107,7 +107,7 @@ function number_op_pair(x)
   elseif x == ("pop" => nothing)
     25258
   else
-    (28 * opcode_index(line[:op], opcodes)) + reg_class(line[:gen])
+    (28 * opcode_index(x.first, opcodes)) + reg_class(x.second)
   end
 end
 
