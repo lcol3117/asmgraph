@@ -179,6 +179,7 @@ function graph(asm, opcodes)
       push!(op_sources, i[:gen] => i[:op])
     end
   end
+  @show links
   return Dict(
     number_op_pair(k) => number_op_pair(v) for (k, v) in links
   )
