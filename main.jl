@@ -99,6 +99,18 @@ function mov_like(op)
   return contains(op, "mov") || (op == "lea")
 end
 
+function number_op_pair(x)
+  if x == ("mov" => nothing)
+    25256
+  elseif x == ("push" => nothing)
+    25257
+  elseif x == ("pop" => nothing)
+    25258
+  else
+    (28 * opcode_index(line[:op], opcodes)) + reg_class(line[:gen])
+  end
+end
+
 function graph(asm, opcodes)
   start = foldl(replace,
     [map(partial(=>)(s" \g<a>"), dir_regexes) ; r_mods],
@@ -111,28 +123,27 @@ function graph(asm, opcodes)
   ) |> map_with(op_shift) |> map_with(line ->
     union(line, Dict(:op =>
       if mov_like(line[:op])
-        "-1"
+        "mov" => nothing
       elseif line[:op] == "push"
-        "-2"
+        "push" => nothing
       elseif line[:op] == "pop"
-        "-3"
+        "pop" => nothing
       else
-        # (28 * opcode_index(line[:op], opcodes)) + reg_class(line[:gen])
-        "[| $(line[:op]) via $(line[:gen]) |]"
+        line[:op] => line[:gen]
       end
     )) |> splat(Dict)
   )
   @show basic_repr
-  links = Dict{AbstractString,AbstractString}()
-  op_sources = Dict{AbstractString,AbstractString}()
+  links = Dict{Pair{AbstractString,Union{AbstractString,Nothing}},Pair{AbstractString,Union{AbstractString,Nothing}}}()
+  op_sources = Dict{AbstractString,Pair{AbstractString,Union{AbstractString,Nothing}}}()
   mov_shifting = Dict{AbstractString,AbstractString}()
   stack_refs = Stack{AbstractString}()
   from_stack = Set{AbstractString}()
   for i in basic_repr
-    if i[:op] == "-1"
+    if i[:op] == ("mov" => nothing)
       push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
       println("<<MOV>>")
-    elseif i[:op] == "-2"
+    elseif i[:op] == ("push" => nothing)
       push!(stack_refs, i[:gen])
       if haskey(op_sources, get_or_id(mov_shifting, i[:gen]))
         push!(op_sources,
@@ -143,7 +154,7 @@ function graph(asm, opcodes)
         )
       end
       println("<<PUSH>>")
-    elseif i[:op] == "-3"
+    elseif i[:op] == ("pop" => nothing)
       push!(mov_shifting, i[:gen] => pop!(stack_refs))
       println("<<POP>>")
     else
@@ -168,7 +179,9 @@ function graph(asm, opcodes)
       push!(op_sources, i[:gen] => i[:op])
     end
   end
-  return links
+  return Dict(
+    number_op_pair(k) => number_op_pair(v) for (k, v) in links
+  )
 end
 
 io_opcodes_csv = open("opcodes.csv")
