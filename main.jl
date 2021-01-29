@@ -127,20 +127,40 @@ function graph(asm, opcodes)
   op_sources = Dict{AbstractString,AbstractString}()
   mov_shifting = Dict{AbstractString,AbstractString}()
   stack_refs = Stack{AbstractString}()
+  from_stack = Set{AbstractString}()
   for i in basic_repr
     if i[:op] == "-1"
       push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
       println("<<MOV>>")
     elseif i[:op] == "-2"
       push!(stack_refs, i[:gen])
+      if haskey(op_sources, get_or_id(mov_shifting, i[:gen]))
+        push!(op_sources,
+          "esp" => op_sources[get_or_id(mov_shifting, i[:gen])]
+        )
+        push!(op_sources,
+          "ebp" => op_sources[get_or_id(mov_shifting, i[:gen])]
+        )
+      end
       println("<<PUSH>>")
     elseif i[:op] == "-3"
       push!(mov_shifting, i[:gen] => pop!(stack_refs))
       println("<<POP>>")
     else
       println("<<>>")
+      if i[:gen] in from_stack
+        delete!(from_stack, i[:gen])
+      end
       for j in i[:uses]
         if haskey(op_sources, get_or_id(mov_shifting, j))
+          if get_or_id(mov_shifting, j) in from_stack
+            if haskey(op_sources, "esp")
+              push!(links, op_sources["esp"] => i[:op])
+            end
+            if haskey(op_sources, "ebp")
+              push!(links, op_sources["ebp"] => i[:op])
+            end
+          end
           push!(links, op_sources[get_or_id(mov_shifting, j)] => i[:op])
           println(op_sources[get_or_id(mov_shifting, j)] => i[:op])
         end
