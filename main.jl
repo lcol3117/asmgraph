@@ -22,64 +22,7 @@ function read_asm_line(text)
 end
 
 function opcode_index(opcode, opcodes)
-  get(opcodes, opcode, -1) + 1
-end
-
-function reg_class(reg)
-  segm_regs = [
-      "cs", "ds", "es",
-      "fs", "gs", "ss"
-  ]
-  instr_regs = [
-    "eax", "ebx",
-    "ecx", "edx"
-  ]
-  repr_num =
-    if reg == "0x80"
-      -2
-    elseif reg == "eip"
-      -1
-    elseif reg in segm_regs
-      1
-    elseif (reg == "ebp" || reg == "esp")
-      2
-    elseif reg in instr_regs
-      3
-    elseif match(r"^0x.*$", reg)
-      4
-    elseif match(r"^\d+", reg)
-      5
-    else
-      6
-    end
-  deref_count = count(partial(==)("["), reg)
-  return repr_num + (deref_count * 7)
-end
-
-function line_paths(l, op_map)
-  dd_targets = nget(op_map, l[:uses])
-  return (l[:op], exval(dd_targets) ? dd_targets : l[:uses], l[:gen])
-end
-
-function mov_like(op)
-  occursin("mov", op) || (op == "lea")
-end
-
-function mov_shifting(basic_repr_raw, flow)
-  basic_repr = flatten_arrays(basic_repr_raw)
-  from, to = flow
-  s_mod = s -> ((s == from) ? to : s)
-  u_mod = x -> s -> union(x, Dict(:uses => s_mod(s))) |> splat(Dict)
-  return map(x -> map(u_mod(x), x[:uses]), basic_repr)
-end
-
-function factify_uses(direct, line)
-  acc, gen_map = direct
-  gen = line[:gen]
-  gen_v, gen_i = gen
-  uses = map(x -> (x, get(gen_map, x, 0)), line[:uses])
-  new_line = Dict(:op => line[:op], :gen => gen, :uses => uses)
-  return ([[new_line] ; acc], union(gen_map, Dict(gen_v => gen_i)) |> splat(Dict))
+  return get(opcodes, opcode, -1) + 1
 end
 
 const shifts = [
@@ -127,8 +70,6 @@ const dir_regexes = [
   r"\b(real10)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]"
 ]
 
-sp(x) = let ; println(x) ; x ; end
-
 function graph(asm, opcodes)
   start = foldl(replace,
     [map(partial(=>)(s" \g<a>"), dir_regexes) ; r_mods],
@@ -142,34 +83,16 @@ function graph(asm, opcodes)
     let (index, line) = x
       union(line, Dict(:gen => (line[:gen], index))) |> splat(Dict)
     end
-  ) |> foldl_with(factify_uses, init=([],Dict())) |> first |> collect
-  @show basic_repr
-  shifted_repr = basic_repr |> filter_with(x -> mov_like(x[:op])) |>
-  map_with(x -> (x[:gen], Iterators.peel(x[:uses]) |> collect)) |>
-  foldl_with(mov_shifting, init=basic_repr) |> Iterators.flatten |> collect |>
-  filter_with(x -> !mov_like(x[:op]))
-  @show shifted_repr
-  op_map = shifted_repr |> map_with(x -> (x[:gen] => x[:op])) |> splat(Dict)
-  @show op_map
-  return shifted_repr |> filter_with(x -> !mov_like(x[:op])) |>
-  map_with(x -> line_paths(x, op_map)) |> filter_with(x ->
-    let (_, targets, _) = x
-      targets |> collect |> isempty |> !
+  ) |> enumerate |> map_with(x ->
+    let (index, line) = x
+      Dict(
+        :op   => opcode_index(line[:op]),
+        :gen  => (line[:gen], index),
+        :uses => map(sub -> (sub, index), line[:uses])
+      )
     end
-  ) |> sp |> map_with(x -> let (source, targets, (reg, _)) = x
-    (source, targets, reg_class(reg))
-      end) |> filter_with(x -> isa(x[2], AbstractString)) |> unique |>
-  map_with(x -> let (source, target, class) = x
-      (opcode_index(source, opcodes), opcode_index(target, opcodes), class)
-  end) |> collect
-end
-
-function graph_link(asm, opcodes)
-  return asm |> partial(graph)(opcodes) |> map_with(x ->
-    let (source, target) = x
-      source => target
-    end
-  ) |> splat(Dict)
+  ) |>  collect
+  return basic_repr
 end
 
 io_opcodes_csv = open("opcodes.csv")
@@ -184,7 +107,7 @@ enumerate |> collect |> map_with(x ->
 ) |> Iterators.flatten |> collect |> splat(Dict)
 
 function modified_msgpack_pack(x)
-  replace(
+  return replace(
     x |> MsgPack.pack,
     UInt8(0x0A) => UInt8(0xC1)
   )
@@ -203,5 +126,4 @@ pop eax
 syscall
 """
 test_asm |> partial(graph)(opcodes) |> println
-test_asm |> partial(graph_link)(opcodes) |> println
-test_asm |> partial(graph_link)(opcodes) |> modified_msgpack_pack |> println
+test_asm |> partial(graph)(opcodes) |> modified_msgpack_pack |> println
