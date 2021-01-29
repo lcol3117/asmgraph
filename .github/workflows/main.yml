@@ -28,5 +28,9 @@ jobs:
         uses: julia-actions/setup-julia@v1.4.1
       
       # Runs a single command using the runners shell
+      - name: Run installer
+        run: julia pkginstall.jl
+      
+      # Runs a single command using the runners shell
       - name: Run code
         run: julia main.jl
