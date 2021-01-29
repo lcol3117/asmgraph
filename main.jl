@@ -199,3 +199,5 @@ syscall
 """
 test_asm |> partial(graph_adj)(opcodes) |> println
 test_asm |> partial(graph_adj)(opcodes) |> modified_msgpack_pack |> println
+
+@show graph(test_asm, opcodes)
