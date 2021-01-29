@@ -155,17 +155,10 @@ function modified_msgpack_pack(x)
 end
 
 println("[[TEST]]")
-test_asm = """
-dec ecx ; this is a comment
-sub ebx, ecx
-xlatb eax
-movzx edx, eax
-imul ecx, edx
-hint_nop7
-syscall
-mov [esp+0], ebx
-pop eax
-syscall
-"""
+
+io_test_asm = open("test.asm")
+test_asm = io_test_asm |> read |> String
+close(io_test_asm)
+
 test_asm |> partial(graph)(opcodes) |> println
 test_asm |> partial(graph)(opcodes) |> modified_msgpack_pack |> println
