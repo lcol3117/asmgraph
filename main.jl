@@ -70,6 +70,37 @@ const dir_regexes = [
   r"\b(real10)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]"
 ]
 
+function reg_class(reg)
+  segm_regs = [
+      "cs", "ds", "es",
+      "fs", "gs", "ss"
+  ]
+  instr_regs = [
+    "eax", "ebx",
+    "ecx", "edx"
+  ]
+  repr_num =
+    if reg == "0x80"
+      -2
+    elseif reg == "eip"
+      -1
+    elseif reg in segm_regs
+      1
+    elseif (reg == "ebp" || reg == "esp")
+      2
+    elseif reg in instr_regs
+      3
+    elseif match(r"^0x.*$", reg)
+      4
+    elseif match(r"^\d+", reg)
+      5
+    else
+      6
+    end
+  deref_count = count(partial(==)("["), reg)
+  return repr_num + (min(deref_count, 3) * 7)
+end
+
 function graph(asm, opcodes)
   start = foldl(replace,
     [map(partial(=>)(s" \g<a>"), dir_regexes) ; r_mods],
@@ -79,19 +110,25 @@ function graph(asm, opcodes)
   basic_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
   partial(replace)(r"\ \ " => " ") |> map_with(read_asm_line) |> filter_with(x ->
     !occursin("nop", x[:op])
-  ) |> map_with(op_shift) |> enumerate |> map_with(x ->
-    let (index, line) = x
-      union(line, Dict(:gen => (line[:gen], index))) |> splat(Dict)
+  ) |> map_with(op_shift) |> map_with(line ->
+    union(line, Dict(
+      :op => (28 * opcode_index(line[:op], opcodes)) + (
+          line[:gen] |> first |> reg_class
+      )
+    )) |> splat(Dict)
+  )
+  @show basic_repr
+  links = Dict{Number,Number}()
+  op_sources = Dict{AbstractString,Number}()
+  for i in basic_repr
+    for j in i[:uses]
+      push!(links,
+        op_sources[j] => i[:op]
+      )
     end
-  ) |> enumerate |> map_with(x ->
-    let (index, line) = x
-      union(line, Dict(
-        :op   => opcode_index(line[:op], opcodes),
-        :uses => map(sub -> (sub, index), line[:uses])
-      )) |> splat(Dict)
-    end
-  ) |>  collect
-  return basic_repr
+    push!(op_sources, i[:gen] => i[:op])
+  end
+  return links
 end
 
 io_opcodes_csv = open("opcodes.csv")
