@@ -1,3 +1,5 @@
+import MsgPack
+
 partial(fq) = aq -> xq -> fq(xq, aq)
 exval(xq) = xq != nothing
 until_last(xq) = xq |> Iterators.reverse |> Iterators.peel |> Iterators.reverse
@@ -176,7 +178,7 @@ enumerate |> collect |> map_with(x ->
   end
 ) |> Iterators.flatten |> collect |> splat(Dict)
 
-"""
+test_asm = """
 dec ecx ; this is a comment
 sub ebx, ecx
 xlatb eax
@@ -187,4 +189,6 @@ syscall
 mov [esp+0], ebx
 pop eax
 syscall
-""" |> partial(graph_adj)(opcodes) |> println
+"""
+test_asm |> partial(graph_adj)(opcodes) |> println
+test_asm |> partial(graph_adj)(opcodes) |> MsgPack.pack |> println
