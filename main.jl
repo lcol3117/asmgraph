@@ -86,7 +86,7 @@ function graph(asm, opcodes)
   ) |> enumerate |> map_with(x ->
     let (index, line) = x
       Dict(
-        :op   => opcode_index(line[:op]),
+        :op   => opcode_index(line[:op], opcodes),
         :gen  => (line[:gen], index),
         :uses => map(sub -> (sub, index), line[:uses])
       )
