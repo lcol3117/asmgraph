@@ -101,6 +101,8 @@ function reg_class(reg)
   return repr_num + (min(deref_count, 3) * 7)
 end
 
+function mov_like(op)
+
 function graph(asm, opcodes)
   start = foldl(replace,
     [map(partial(=>)(s" \g<a>"), dir_regexes) ; r_mods],
@@ -111,20 +113,29 @@ function graph(asm, opcodes)
   partial(replace)(r"\ \ " => " ") |> map_with(read_asm_line) |> filter_with(x ->
     !occursin("nop", x[:op])
   ) |> map_with(op_shift) |> map_with(line ->
-    union(line, Dict(
-      :op => (28 * opcode_index(line[:op], opcodes)) + reg_class(line[:gen])
+    union(line, Dict(:op =>
+      if mov_like(line[:op])
+        -1
+      else
+        (28 * opcode_index(line[:op], opcodes)) + reg_class(line[:gen])
+      end
     )) |> splat(Dict)
   )
   @show basic_repr
   links = Dict{Number,Number}()
   op_sources = Dict{AbstractString,Number}()
+  mov_shifting = Dict{AbstractString,AbstractString}()
   for i in basic_repr
-    for j in i[:uses]
-      if haskey(op_sources, j)
-        push!(links, op_sources[j] => i[:op])
+    if i[:op] == -1
+      push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
+    else
+      for j in i[:uses]
+        if haskey(op_sources, get_or_id(mov_shifting, j))
+          push!(links, op_sources[mov_shifting, get_or_id(j)] => i[:op])
+        end
       end
+      push!(op_sources, i[:gen] => i[:op])
     end
-    push!(op_sources, i[:gen] => i[:op])
   end
   return links
 end
