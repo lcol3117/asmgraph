@@ -155,7 +155,7 @@ function graph(asm, opcodes)
       end) |> filter_with(x -> isa(x[2], AbstractString)) |> unique |>
   map_with(x -> let (source, target, class) = x
       (opcode_index(source, opcodes), opcode_index(target, opcodes), class)
-  end) |> collect |> unique
+  end) |> collect
 end
 
 function graph_adj(asm, opcodes)
@@ -166,6 +166,13 @@ function graph_adj(asm, opcodes)
   ) |> splat(Dict)
 end
 
+function graph_link(asm, opcodes)
+  return asm |> partial(graph)(opcodes) |> map_with(x ->
+    let (source, target, _class) = x
+      source => target
+    end
+  ) |> splat(Dict)
+end
 
 io_opcodes_csv = open("opcodes.csv")
 opcodes_csv = io_opcodes_csv |> read |> String
@@ -199,5 +206,5 @@ syscall
 """
 test_asm |> partial(graph_adj)(opcodes) |> println
 test_asm |> partial(graph_adj)(opcodes) |> modified_msgpack_pack |> println
-
-@show graph(test_asm, opcodes)
+test_asm |> partial(graph_link)(opcodes) |> println
+test_asm |> partial(graph_link)(opcodes) |> modified_msgpack_pack |> println
