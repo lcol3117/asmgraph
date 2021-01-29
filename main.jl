@@ -147,6 +147,7 @@ function modified_msgpack_pack(x)
   )
 end
 
+println("[[TEST]]")
 test_asm = """
 dec ecx ; this is a comment
 sub ebx, ecx
