@@ -178,6 +178,13 @@ enumerate |> collect |> map_with(x ->
   end
 ) |> Iterators.flatten |> collect |> splat(Dict)
 
+function modified_msgpack_pack(x)
+  replace(
+    x |> MsgPack.pack,
+    UInt8(0x0A) => UInt8(0xC1)
+  )
+end
+
 test_asm = """
 dec ecx ; this is a comment
 sub ebx, ecx
@@ -191,4 +198,4 @@ pop eax
 syscall
 """
 test_asm |> partial(graph_adj)(opcodes) |> println
-test_asm |> partial(graph_adj)(opcodes) |> MsgPack.pack |> println
+test_asm |> partial(graph_adj)(opcodes) |> modified_msgpack_pack |> println
