@@ -127,7 +127,7 @@ function graph(asm, opcodes)
     else
       for j in i[:uses]
         if haskey(op_sources, get_or_id(mov_shifting, j))
-          push!(links, op_sources[mov_shifting, get_or_id(j)] => i[:op])
+          push!(links, op_sources[mov_shifting, get_or_id(mov_shifting, j)] => i[:op])
         end
       end
       push!(op_sources, i[:gen] => i[:op])
