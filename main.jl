@@ -132,6 +132,7 @@ function graph(asm, opcodes)
     [map(partial(=>)(s" \g<a>"), dir_regexes) ; r_mods],
     init=asm
   )
+  @show start
   basic_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
   partial(replace)(r"\ \ " => " ") |> map_with(read_asm_line) |> filter_with(x ->
     !occursin("nop", x[:op])
@@ -140,11 +141,14 @@ function graph(asm, opcodes)
       union(line, Dict(:gen => (line[:gen], index))) |> splat(Dict)
     end
   ) |> foldl_with(factify_uses, init=([],Dict())) |> first |> collect
+  @show basic_repr
   shifted_repr = basic_repr |> filter_with(x -> mov_like(x[:op])) |>
   map_with(x -> (x[:gen], Iterators.peel(x[:uses]) |> collect)) |>
   foldl_with(mov_shifting, init=basic_repr) |> Iterators.flatten |> collect |>
   filter_with(x -> !mov_like(x[:op]))
+  @show shifted_repr
   op_map = shifted_repr |> map_with(x -> (x[:gen] => x[:op])) |> splat(Dict)
+  @show op_map
   return shifted_repr |> filter_with(x -> !mov_like(x[:op])) |>
   map_with(x -> line_paths(x, op_map)) |> filter_with(x ->
     let (_, targets, _) = x
