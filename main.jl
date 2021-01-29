@@ -102,6 +102,8 @@ function reg_class(reg)
 end
 
 function mov_like(op)
+  return contains(op, "mov") || (op == "lea")
+end
 
 function graph(asm, opcodes)
   start = foldl(replace,
