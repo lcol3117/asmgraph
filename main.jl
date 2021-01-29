@@ -85,11 +85,10 @@ function graph(asm, opcodes)
     end
   ) |> enumerate |> map_with(x ->
     let (index, line) = x
-      Dict(
+      union(line, Dict(
         :op   => opcode_index(line[:op], opcodes),
-        :gen  => (line[:gen], index),
         :uses => map(sub -> (sub, index), line[:uses])
-      )
+      )) |> splat(Dict)
     end
   ) |>  collect
   return basic_repr
