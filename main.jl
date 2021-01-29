@@ -173,6 +173,7 @@ function graph(asm, opcodes)
             end
           end
           push!(links, op_sources[get_or_id(mov_shifting, j)] => i[:op])
+          println("&&")
           println(op_sources[get_or_id(mov_shifting, j)] => i[:op])
         end
       end
