@@ -156,7 +156,7 @@ function graph(asm, opcodes)
     let (_, targets, _) = x
       targets |> collect |> isempty |> !
     end
-  ) |>sp|> |> map_with(x -> let (source, targets, (reg, _)) = x
+  ) |> sp |> map_with(x -> let (source, targets, (reg, _)) = x
     (source, targets, reg_class(reg))
       end) |> filter_with(x -> isa(x[2], AbstractString)) |> unique |>
   map_with(x -> let (source, target, class) = x
