@@ -127,6 +127,8 @@ const dir_regexes = [
   r"\b(real10)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]"
 ]
 
+sp(x) = let ; println(x) ; x ; end
+
 function graph(asm, opcodes)
   start = foldl(replace,
     [map(partial(=>)(s" \g<a>"), dir_regexes) ; r_mods],
@@ -154,7 +156,7 @@ function graph(asm, opcodes)
     let (_, targets, _) = x
       targets |> collect |> isempty |> !
     end
-  ) |> map_with(x -> let (source, targets, (reg, _)) = x
+  ) |>sp|> |> map_with(x -> let (source, targets, (reg, _)) = x
     (source, targets, reg_class(reg))
       end) |> filter_with(x -> isa(x[2], AbstractString)) |> unique |>
   map_with(x -> let (source, target, class) = x
@@ -162,17 +164,9 @@ function graph(asm, opcodes)
   end) |> collect
 end
 
-function graph_adj(asm, opcodes)
-  return asm |> partial(graph)(opcodes) |> map_with(x ->
-    let (source, target, class) = x
-      ((length(opcodes) * source) + target) => class
-    end
-  ) |> splat(Dict)
-end
-
 function graph_link(asm, opcodes)
   return asm |> partial(graph)(opcodes) |> map_with(x ->
-    let (source, target, _class) = x
+    let (source, target) = x
       source => target
     end
   ) |> splat(Dict)
@@ -209,7 +203,5 @@ pop eax
 syscall
 """
 test_asm |> partial(graph)(opcodes) |> println
-test_asm |> partial(graph_adj)(opcodes) |> println
-test_asm |> partial(graph_adj)(opcodes) |> modified_msgpack_pack |> println
 test_asm |> partial(graph_link)(opcodes) |> println
 test_asm |> partial(graph_link)(opcodes) |> modified_msgpack_pack |> println
