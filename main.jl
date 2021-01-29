@@ -120,9 +120,9 @@ function graph(asm, opcodes)
   op_sources = Dict{AbstractString,Number}()
   for i in basic_repr
     for j in i[:uses]
-      push!(links,
-        op_sources[j] => i[:op]
-      )
+      if haskey(op_sources, j)
+        push!(links, op_sources[j] => i[:op])
+      end
     end
     push!(op_sources, i[:gen] => i[:op])
   end
