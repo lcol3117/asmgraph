@@ -142,6 +142,7 @@ function graph(asm, opcodes)
       for j in i[:uses]
         if haskey(op_sources, get_or_id(mov_shifting, j))
           push!(links, op_sources[get_or_id(mov_shifting, j)] => i[:op])
+          println(op_sources[get_or_id(mov_shifting, j)] => i[:op])
         end
       end
       push!(op_sources, i[:gen] => i[:op])
