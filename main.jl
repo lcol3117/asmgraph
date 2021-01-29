@@ -155,7 +155,7 @@ function graph(asm, opcodes)
       end) |> filter_with(x -> isa(x[2], AbstractString)) |> unique |>
   map_with(x -> let (source, target, class) = x
       (opcode_index(source, opcodes), opcode_index(target, opcodes), class)
-  end) |> collect |> Set
+  end) |> collect |> unique
 end
 
 function graph_adj(asm, opcodes)
