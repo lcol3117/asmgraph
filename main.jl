@@ -111,19 +111,20 @@ function graph(asm, opcodes)
   ) |> map_with(op_shift) |> map_with(line ->
     union(line, Dict(:op =>
       if mov_like(line[:op])
-        -1
+        "-1"
       elseif line[:op] == "push"
-        -2
+        "-2"
       elseif line[:op] == "pop"
-        -3
+        "-3"
       else
-        (28 * opcode_index(line[:op], opcodes)) + reg_class(line[:gen])
+        # (28 * opcode_index(line[:op], opcodes)) + reg_class(line[:gen])
+        "[| $(line[:op]) via $(line[:gen]) |]"
       end
     )) |> splat(Dict)
   )
   @show basic_repr
-  links = Dict{Number,Number}()
-  op_sources = Dict{AbstractString,Number}()
+  links = Dict{AbstractString,AbstractString}()
+  op_sources = Dict{AbstractString,AbstractString}()
   mov_shifting = Dict{AbstractString,AbstractString}()
   stack_refs = Stack{AbstractString}()
   from_stack = Set{AbstractString}()
