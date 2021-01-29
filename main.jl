@@ -1,17 +1,11 @@
 import MsgPack
 
 partial(fq) = aq -> xq -> fq(xq, aq)
-exval(xq) = xq != nothing
-until_last(xq) = xq |> Iterators.reverse |> Iterators.peel |> Iterators.reverse
-nget(xq, vq) = get(xq, vq, nothing)
-nget(xq::Pair{Symbol,Any}, _vq::Symbol) = xq
 splat(fq) = xq -> fq(xq...)
-flatten_arrays(xq) = xq
-flatten_arrays(xq::Array{Array{T,1},1}) where T = xq |> Iterators.flatten |> collect |> flatten_arrays
-foldl_with(fq; kwq...) = xq -> foldl(fq, xq; kwq...)
 filter_with(fq) = xq -> filter(fq, xq)
 map_with(fq) = xq -> map(fq, xq)
 split_with(delimq) = xq -> split(xq, delimq)
+get_or_id(src, key) = haskey(src, key) ? src[key] : key
 Iterators.rest(itrq::Iterators.Rest, stateq) = Iterators.Rest(itrq.itr, stateq)
 
 function read_asm_line(text)
