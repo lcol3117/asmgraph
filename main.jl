@@ -112,9 +112,7 @@ function graph(asm, opcodes)
     !occursin("nop", x[:op])
   ) |> map_with(op_shift) |> map_with(line ->
     union(line, Dict(
-      :op => (28 * opcode_index(line[:op], opcodes)) + (
-          line[:gen] |> first |> reg_class
-      )
+      :op => (28 * opcode_index(line[:op], opcodes)) + reg_class(line[:gen])
     )) |> splat(Dict)
   )
   @show basic_repr
