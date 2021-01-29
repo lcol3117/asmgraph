@@ -1,5 +1,7 @@
 import MsgPack
 
+using DataStructures
+
 partial(fq) = aq -> xq -> fq(xq, aq)
 splat(fq) = xq -> fq(xq...)
 filter_with(fq) = xq -> filter(fq, xq)
