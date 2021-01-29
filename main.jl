@@ -45,9 +45,7 @@ const r_mods = [
   r"\Wdl" => "edx", r"\Wdh" => "edx", r"\Wdx" => "edx", r"\Wrdx" => "edx",
   r";.*\n" => "\n", "sysenter" => "syscall", r"\Wrsp" => "esp", r"\Wrbp" => "ebp",
   r"\Wrip" => "eip", "syscall" => "int 0x80, eax, ebx, ecx, edx",
-  r"xor\W+(?<a>\w+),\W+(?P=a)" => s"xorclear \g<a>",
-  r"push\w? (?<a>.+?)\n" => s"movactpush esp, \g<a>, ebp\npush esp, \g<a>, ebp\n",
-  r"pop\w? (?<a>.+?)\n" => s"movactpop \g<a>, esp, ebp\npop \g<a>, esp, ebp\n"
+  r"xor\W+(?<a>\w+),\W+(?P=a)" => s"xorclear \g<a>"
 ]
 
 const dir_regexes = [
@@ -112,6 +110,10 @@ function graph(asm, opcodes)
     union(line, Dict(:op =>
       if mov_like(line[:op])
         "-1"
+      elseif line[:op] == "push"
+        "-2"
+      elseif line[:op] == "pop"
+        "-3"
       else
         # (28 * opcode_index(line[:op], opcodes)) + reg_class(line[:gen])
         "[| $(line[:op]) via $(line[:gen]) |]"
@@ -122,10 +124,19 @@ function graph(asm, opcodes)
   links = Dict{AbstractString,AbstractString}()
   op_sources = Dict{AbstractString,AbstractString}()
   mov_shifting = Dict{AbstractString,AbstractString}()
+  stack_refs = Stack{AbstractString}()
   for i in basic_repr
     if i[:op] == "-1"
       push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
+      println("<<MOV>>")
+    elseif i[:op] == "-2"
+      push!(stack_refs, i[:gen])
+      println("<<PUSH>>")
+    elseif i[:op] == "-3"
+      push!(mov_shifting, i[:gen] => pop!(stack_refs))
+      println("<<POP>>")
     else
+      println("<<>>")
       for j in i[:uses]
         if haskey(op_sources, get_or_id(mov_shifting, j))
           push!(links, op_sources[get_or_id(mov_shifting, j)] => i[:op])
