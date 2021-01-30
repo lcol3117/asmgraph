@@ -96,7 +96,7 @@ function reg_class(reg)
 end
 
 function mov_like(op)
-  return contains(op, "mov") || (op == "lea")
+  return occursin("mov", op) || (op == "lea")
 end
 
 function number_op_pair(x)
