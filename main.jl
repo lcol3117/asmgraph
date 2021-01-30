@@ -1,5 +1,7 @@
 import MsgPack
 
+using DataStructures
+
 partial(fq) = aq -> xq -> fq(xq, aq)
 splat(fq) = xq -> fq(xq...)
 filter_with(fq) = xq -> filter(fq, xq)
@@ -45,9 +47,7 @@ const r_mods = [
   r"\Wdl" => "edx", r"\Wdh" => "edx", r"\Wdx" => "edx", r"\Wrdx" => "edx",
   r";.*\n" => "\n", "sysenter" => "syscall", r"\Wrsp" => "esp", r"\Wrbp" => "ebp",
   r"\Wrip" => "eip", "syscall" => "int 0x80, eax, ebx, ecx, edx",
-  r"xor\W+(?<a>\w+),\W+(?P=a)" => s"xorclear \g<a>",
-  r"push\w? (?<a>.+?)\n" => s"movactpush esp, \g<a>, ebp\npush esp, \g<a>, ebp\n",
-  r"pop\w? (?<a>.+?)\n" => s"movactpop \g<a>, esp, ebp\npop \g<a>, esp, ebp\n"
+  r"xor\W+(?<a>\w+),\W+(?P=a)" => s"xorclear \g<a>"
 ]
 
 const dir_regexes = [
@@ -99,41 +99,87 @@ function mov_like(op)
   return contains(op, "mov") || (op == "lea")
 end
 
+function number_op_pair(x)
+  if x == ("mov" => nothing)
+    25256
+  elseif x == ("push" => nothing)
+    25257
+  elseif x == ("pop" => nothing)
+    25258
+  else
+    (28 * opcode_index(x.first, opcodes)) + reg_class(x.second)
+  end
+end
+
 function graph(asm, opcodes)
   start = foldl(replace,
     [map(partial(=>)(s" \g<a>"), dir_regexes) ; r_mods],
     init=asm
   )
-  @show start
   basic_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
   partial(replace)(r"\ \ " => " ") |> map_with(read_asm_line) |> filter_with(x ->
     !occursin("nop", x[:op])
   ) |> map_with(op_shift) |> map_with(line ->
     union(line, Dict(:op =>
       if mov_like(line[:op])
-        -1
+        "mov" => nothing
+      elseif line[:op] == "push"
+        "push" => nothing
+      elseif line[:op] == "pop"
+        "pop" => nothing
       else
-        (28 * opcode_index(line[:op], opcodes)) + reg_class(line[:gen])
+        line[:op] => line[:gen]
       end
     )) |> splat(Dict)
   )
-  @show basic_repr
-  links = Dict{Number,Number}()
-  op_sources = Dict{AbstractString,Number}()
+  links = Set{Pair{Pair{AbstractString,Union{AbstractString,Nothing}},Pair{AbstractString,Union{AbstractString,Nothing}}}}()
+  op_sources = Dict{AbstractString,Pair{AbstractString,Union{AbstractString,Nothing}}}()
   mov_shifting = Dict{AbstractString,AbstractString}()
+  stack_refs = Stack{AbstractString}()
+  from_stack = Set{AbstractString}()
   for i in basic_repr
-    if i[:op] == -1
+    if i[:op] == ("mov" => nothing)
       push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
+    elseif i[:op] == ("push" => nothing)
+      push!(stack_refs, i[:gen])
+      if haskey(op_sources, get_or_id(mov_shifting, i[:gen]))
+        push!(op_sources,
+          "esp" => op_sources[get_or_id(mov_shifting, i[:gen])]
+        )
+        push!(op_sources,
+          "ebp" => op_sources[get_or_id(mov_shifting, i[:gen])]
+        )
+      end
+    elseif i[:op] == ("pop" => nothing)
+      push!(mov_shifting, i[:gen] => pop!(stack_refs))
     else
+      if i[:gen] in from_stack
+        delete!(from_stack, i[:gen])
+      end
       for j in i[:uses]
-        if haskey(op_sources, get_or_id(mov_shifting, j))
+        exists = haskey(op_sources, get_or_id(mov_shifting, j))
+        if exists && op_sources[get_or_id(mov_shifting, j)] != i[:op]
+          if get_or_id(mov_shifting, j) in from_stack
+            if haskey(op_sources, "esp")
+              push!(links, op_sources["esp"] => i[:op])
+            end
+            if haskey(op_sources, "ebp")
+              push!(links, op_sources["ebp"] => i[:op])
+            end
+          end
           push!(links, op_sources[get_or_id(mov_shifting, j)] => i[:op])
         end
       end
       push!(op_sources, i[:gen] => i[:op])
     end
   end
-  return links
+  return map(
+    x -> Pair(map(
+      number_op_pair,
+      x
+    )...),
+    collect(links)
+  )
 end
 
 io_opcodes_csv = open("opcodes.csv")
@@ -149,16 +195,30 @@ enumerate |> collect |> map_with(x ->
 
 function modified_msgpack_pack(x)
   return replace(
-    x |> MsgPack.pack,
-    UInt8(0x0A) => UInt8(0xC1)
+    map(
+      sub -> [sub.first, sub.second],
+      x
+    ) |> Iterators.flatten |> collect |> MsgPack.pack,
+    UInt8(0x0A) => UInt8(0xC0),
+    UInt8(0x00) => UInt8(0xC1)
   )
 end
 
-println("[[TEST]]")
+function graph_modified_msgpack(asm, opcodes)
+  return graph(asm, opcodes) |> modified_msgpack_pack
+end
 
-io_test_asm = open("source.asm")
-test_asm = io_test_asm |> read |> String
-close(io_test_asm)
+io_asm = open("source.asm")
+asm = io_asm |> read |> String
+close(io_asm)
 
-test_asm |> partial(graph)(opcodes) |> println
-test_asm |> partial(graph)(opcodes) |> modified_msgpack_pack |> println
+open("target.mmp", "a") do f
+  write(f, graph_modified_msgpack(asm, opcodes))
+  write(f, "\n")
+end
+
+if length(ARGS) >= 1 && ARGS[1] == "debug"
+  open("target.mmp") do f
+    f |> read |> String |> println
+  end
+end
