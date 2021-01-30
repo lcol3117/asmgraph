@@ -217,7 +217,7 @@ open("target.mmp", "a") do f
   write(f, "\n")
 end
 
-if ARGS[1] == "debug"
+if length(ARGS) >= 1 && ARGS[1] == "debug"
   open("target.mmp") do f
     f |> read |> String |> println
   end
