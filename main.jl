@@ -21,6 +21,7 @@ function opcode_index(opcode, opcodes)
   return get(opcodes, opcode, -1) + 1
 end
 
+
 const shifts = [
   ("jz", "je"), ("jnz", "jne"), ("iretd", "iret"), ("jnbe", "ja"), ("jnb", "jae"),
   ("jnae", "jb"), ("jna", "jbe"), ("jecxz", "jcxz"), ("jnle", "jg"), ("jnl", "jge"),
