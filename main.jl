@@ -21,7 +21,6 @@ function opcode_index(opcode, opcodes)
   return get(opcodes, opcode, -1) + 1
 end
 
-
 const shifts = [
   ("jz", "je"), ("jnz", "jne"), ("iretd", "iret"), ("jnbe", "ja"), ("jnb", "jae"),
   ("jnae", "jb"), ("jna", "jbe"), ("jecxz", "jcxz"), ("jnle", "jg"), ("jnl", "jge"),
@@ -117,7 +116,6 @@ function graph(asm, opcodes)
     [map(partial(=>)(s" \g<a>"), dir_regexes) ; r_mods],
     init=asm
   )
-  @show start
   basic_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
   partial(replace)(r"\ \ " => " ") |> map_with(read_asm_line) |> filter_with(x ->
     !occursin("nop", x[:op])
@@ -134,7 +132,6 @@ function graph(asm, opcodes)
       end
     )) |> splat(Dict)
   )
-  @show basic_repr
   links = Set{Pair{Pair{AbstractString,Union{AbstractString,Nothing}},Pair{AbstractString,Union{AbstractString,Nothing}}}}()
   op_sources = Dict{AbstractString,Pair{AbstractString,Union{AbstractString,Nothing}}}()
   mov_shifting = Dict{AbstractString,AbstractString}()
@@ -143,7 +140,6 @@ function graph(asm, opcodes)
   for i in basic_repr
     if i[:op] == ("mov" => nothing)
       push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
-      println("<<MOV>>")
     elseif i[:op] == ("push" => nothing)
       push!(stack_refs, i[:gen])
       if haskey(op_sources, get_or_id(mov_shifting, i[:gen]))
@@ -154,12 +150,9 @@ function graph(asm, opcodes)
           "ebp" => op_sources[get_or_id(mov_shifting, i[:gen])]
         )
       end
-      println("<<PUSH>>")
     elseif i[:op] == ("pop" => nothing)
       push!(mov_shifting, i[:gen] => pop!(stack_refs))
-      println("<<POP>>")
     else
-      println("<<>>")
       if i[:gen] in from_stack
         delete!(from_stack, i[:gen])
       end
@@ -174,8 +167,6 @@ function graph(asm, opcodes)
             end
           end
           push!(links, op_sources[get_or_id(mov_shifting, j)] => i[:op])
-          println("&&")
-          println(op_sources[get_or_id(mov_shifting, j)] => i[:op])
         end
       end
       push!(op_sources, i[:gen] => i[:op])
