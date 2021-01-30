@@ -156,7 +156,7 @@ end
 
 println("[[TEST]]")
 
-io_test_asm = open("test.asm")
+io_test_asm = open("source.asm")
 test_asm = io_test_asm |> read |> String
 close(io_test_asm)
 
