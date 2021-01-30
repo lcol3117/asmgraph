@@ -200,7 +200,8 @@ function modified_msgpack_pack(x)
       sub -> [sub.first, sub.second],
       x
     ) |> Iterators.flatten |> collect |> MsgPack.pack,
-    UInt8(0x0A) => UInt8(0xC1)
+    UInt8(0x0A) => UInt8(0xC0),
+    UInt8(0x00) => UInt8(0xC1)
   )
 end
 
@@ -211,6 +212,14 @@ end
 io_asm = open("source.asm")
 asm = io_asm |> read |> String
 close(io_asm)
-println(
-  asm |> partial(graph_modified_msgpack)(opcodes)
-)
+
+open("target.mmp") do f
+  write(f, graph_modified_msgpack(asm, opcodes))
+  write(f, "\n")
+end
+
+if ARGS[1] == "debug"
+  open("target.mmp") do f
+    f |> read |> String |> println
+  end
+end
