@@ -134,9 +134,8 @@ function graph(asm, opcodes)
     )) |> splat(Dict)
   )
   @show basic_repr
-  const OpRepr = Pair{AbstractString,Union{AbstractString,Nothing}}
-  links = Set{Pair{OpRepr,OpRepr}}()
-  op_sources = Dict{AbstractString,OpRepr}()
+  links = Set{Pair{Pair{AbstractString,Union{AbstractString,Nothing}},Pair{AbstractString,Union{AbstractString,Nothing}}}}()
+  op_sources = Dict{AbstractString,Pair{AbstractString,Union{AbstractString,Nothing}}}()
   mov_shifting = Dict{AbstractString,AbstractString}()
   stack_refs = Stack{AbstractString}()
   from_stack = Set{AbstractString}()
