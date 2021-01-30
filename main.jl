@@ -173,7 +173,6 @@ function graph(asm, opcodes)
       push!(op_sources, i[:gen] => i[:op])
     end
   end
-  @show links
   return map(
     x -> Pair(map(
       number_op_pair,
@@ -213,7 +212,7 @@ io_asm = open("source.asm")
 asm = io_asm |> read |> String
 close(io_asm)
 
-open("target.mmp") do f
+open("target.mmp", "a") do f
   write(f, graph_modified_msgpack(asm, opcodes))
   write(f, "\n")
 end
