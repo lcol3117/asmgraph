@@ -211,11 +211,14 @@ function modified_msgpack_pack(x)
   )
 end
 
-println("[[TEST]]")
+function graph_modified_msgpack(asm, opcodes)
+  return graph(asm, opcodes) |> modified_msgpack_pack
+end
 
-io_test_asm = open("test.asm")
-test_asm = io_test_asm |> read |> String
-close(io_test_asm)
+io_asm = open("source.asm")
+asm = io_asm |> read |> String
+close(io_asm)
 
-test_asm |> partial(graph)(opcodes) |> println
-test_asm |> partial(graph)(opcodes) |> modified_msgpack_pack |> println
+println(
+  asm |> partial(graph_modified_msgpack)(opcodes)
+)
