@@ -186,7 +186,7 @@ function graph(asm, opcodes)
       number_op_pair,
       x
     )...),
-    links
+    collect(links)
   )
 end
 
@@ -205,7 +205,7 @@ function modified_msgpack_pack(x)
   return replace(
     map(
       sub -> [sub.first, sub.second],
-      collect(x)
+      x
     ) |> Iterators.flatten |> collect |> MsgPack.pack,
     UInt8(0x0A) => UInt8(0xC1)
   )
