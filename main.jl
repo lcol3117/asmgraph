@@ -211,7 +211,6 @@ end
 io_asm = open("source.asm")
 asm = io_asm |> read |> String
 close(io_asm)
-
 println(
   asm |> partial(graph_modified_msgpack)(opcodes)
 )
