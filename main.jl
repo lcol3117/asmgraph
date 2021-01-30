@@ -163,7 +163,7 @@ function graph(asm, opcodes)
         delete!(from_stack, i[:gen])
       end
       for j in i[:uses]
-        if haskey(op_sources, get_or_id(mov_shifting, j))
+        if haskey(op_sources, get_or_id(mov_shifting, j)) && op_sources[get_or_id(mov_shifting, j)] != i[:op]
           if get_or_id(mov_shifting, j) in from_stack
             if haskey(op_sources, "esp")
               push!(links, op_sources["esp"] => i[:op])
