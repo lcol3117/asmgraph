@@ -134,8 +134,9 @@ function graph(asm, opcodes)
     )) |> splat(Dict)
   )
   @show basic_repr
-  links = []
-  op_sources = Dict{AbstractString,Pair{AbstractString,Union{AbstractString,Nothing}}}()
+  const OpRepr = Pair{AbstractString,Union{AbstractString,Nothing}}
+  links = Set{Pair{OpRepr,OpRepr}}()
+  op_sources = Dict{AbstractString,OpRepr}()
   mov_shifting = Dict{AbstractString,AbstractString}()
   stack_refs = Stack{AbstractString}()
   from_stack = Set{AbstractString}()
@@ -205,7 +206,7 @@ function modified_msgpack_pack(x)
   return replace(
     map(
       sub -> [sub.first, sub.second],
-      x
+      collect(x)
     ) |> Iterators.flatten |> collect |> MsgPack.pack,
     UInt8(0x0A) => UInt8(0xC1)
   )
