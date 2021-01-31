@@ -216,7 +216,7 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
           jump_derive_eax = false
         end
         if jump_derive_eax
-          push!(links, get_or_id(op_sources, "eax"])=> i[:op])
+          push!(links, get_or_id(op_sources, "eax"))=> i[:op])
         end
         if jump_source != nothing
           push!(links, jump_source => i[:op])
