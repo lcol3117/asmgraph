@@ -1,3 +1,5 @@
+using Distributed
+
 using DataStructures
 import MsgPack
 
@@ -90,14 +92,17 @@ const dir_regexes = [
   r"\b(near)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]"
 ]
 
+function instr_reg(reg)
+  return reg in [
+    "eax", "ebx",
+    "ecx", "edx"
+  ]
+end
+
 function reg_class(reg)
   segm_regs = [
       "cs", "ds", "es",
       "fs", "gs", "ss"
-  ]
-  instr_regs = [
-    "eax", "ebx",
-    "ecx", "edx"
   ]
   repr_num =
     if reg == "0x80"
@@ -108,7 +113,7 @@ function reg_class(reg)
       1
     elseif (reg == "ebp" || reg == "esp")
       2
-    elseif reg in instr_regs
+    elseif instr_reg(reg)
       3
     elseif startswith(reg, "0x")
       4
@@ -172,7 +177,10 @@ function graph(asm, opcodes)
   jump_source = nothing
   jump_depth = 0
   start_segm = nothing
-  links_retn = run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, h, jump_derive_eax, jump_source, jump_depth, start_segm)
+  links_retn = run_graphing(
+    bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack,
+    h, jump_derive_eax, jump_source, jump_depth, start_segm
+  )
   return map(
     x -> Pair(map(
       number_op_pair,
@@ -182,7 +190,11 @@ function graph(asm, opcodes)
   )
 end
 
-function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, h, jump_derive_eax, jump_source, jump_depth, start_segm)
+@everywhere function run_graphing(
+  bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack,
+  h, jump_derive_eax, jump_source, jump_depth, start_segm
+)
+  fork_local = Set{Future}()
   basic_repr = begin
     if start_segm == nothing
       bw_repr
@@ -199,12 +211,15 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
     for full in basic_repr
       try
         i = full.second
-	if jump_depth >= parse(Int64, ARGS[1])
-	  if length(ARGS) >= 2 && ARGS[2] == "debug"
-	    println("Stopping recursive fork, jump depth reached $jump_depth")
-	  end
-	  continue
-	end
+        if instr_reg(i[:op].first) || instr_reg(i[:op].second)
+          continue
+        end
+      	if jump_depth >= parse(Int64, ARGS[1])
+      	  if length(ARGS) >= 2 && ARGS[2] == "debug"
+      	    println("Stopping recursive fork, jump depth reached $jump_depth")
+      	  end
+      	  continue
+      	end
         if i[:op].first[1] == 'j'
           new_start_segm = full.first.first => begin
             if startswith(i[:gen], "0x")
@@ -213,14 +228,17 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
               parse(Int64, i[:gen], base= 16)
             end
           end
-	  is_c = i[:op].second != "jmp"
-	  if new_start_segm in h
-	    continue
-	  end
-	  push!(h, new_start_segm)
+      	  is_c = i[:op].second != "jmp"
+      	  if new_start_segm in h
+      	    continue
+      	  end
+      	  push!(h, new_start_segm)
           union!(
-            links,
-            run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, h, is_c, i[:op], jump_depth + 1, new_start_segm)
+            fork_local,
+            @spawnat :any run_graphing(
+              bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack,
+              h, is_c, i[:op], jump_depth + 1, new_start_segm
+            )
           )
           if is_c && haskey(op_sources, "eax")
             push!(links, op_sources["eax"]=> i[:op])
@@ -243,9 +261,9 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
             push!(mov_shifting, i[:gen] => pop!(stack_refs))
           catch _ end
         else
-	  if length(ARGS) >= 2 && ARGS[2] == "debug"
-	    println("Opcode $(i[:op]) entered...")
-	  end
+      	  if length(ARGS) >= 2 && ARGS[2] == "debug"
+      	    println("Opcode $(i[:op]) entered...")
+      	  end
           if i[:gen] in from_stack
             delete!(from_stack, i[:gen])
           end
@@ -280,7 +298,10 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
   if length(ARGS) >= 2 && ARGS[2] == "debug"
   	println("Returning links, starting with $(links |> Iterators.peel).")
   end
-  return links
+  return union(
+    links,
+    ( fetch(i) for i in fork_local )
+  )
 end
 
 io_opcodes_csv = open("opcodes.csv")
