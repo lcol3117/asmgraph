@@ -18,9 +18,9 @@ function read_asm_line(text)
   uses = [[gen] ; collect(unmod)]
   instr_component = Dict(:op => op, :gen => gen, :uses => uses)
   segm_component = (
-    parse(Int64, segm_text[1:4], 16)
+    parse(Int64, segm_text[1:4], base= 16)
   ) => (
-    parse(Int64, segm_text[5:8], 16)
+    parse(Int64, segm_text[5:8], base= 16)
   )
   return segm_component => instr_component
 end
