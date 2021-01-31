@@ -8,3 +8,4 @@
 0000000E    9f    push ebx
 00000010    2     pop eax
 00000012    a23   syscall
+00000014    a8    jnc 0x4
