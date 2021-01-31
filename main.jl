@@ -26,7 +26,9 @@ function read_asm_line(text)
   catch _
     (nothing, nothing, -1 => -1)
   end
-  @show segm_component
+  if length(ARGS) >= 2 && ARGS[2] == "debug"
+    @show segm_component
+  end
   try
     _, instr_split = Iterators.peel(item_split)
     op, args = Iterators.peel(instr_split)
@@ -63,13 +65,14 @@ function op_shift(s_line)
 end
 
 const r_mods = [
+  r"xor\W+(?<a>\w+)\W*,\W*(?P=a)" => s"xorclear \g<a>",
   r"\Wal" => " eax", r"\Wah" => " eax", r"\Wax" => " eax", r"\Wrax" => " eax",
   r"\Wbl" => " ebx", r"\Wbh" => " ebx", r"\Wbx" => " ebx", r"\Wrbx" => " ebx",
   r"\Wcl" => " ecx", r"\Wch" => " ecx", r"\Wcx" => " ecx", r"\Wrcx" => " ecx",
   r"\Wdl" => " edx", r"\Wdh" => " edx", r"\Wdx" => " edx", r"\Wrdx" => " edx",
+  r"\Wsp" => " esp", r"\Wbp" => " ebp",
   r";.*\n" => "\n", "sysenter" => "syscall", r"\Wrsp" => " esp", r"\Wrbp" => " ebp",
   r"\Wrip" => " eip", "syscall" => "int 0x80, eax, ebx, ecx, edx", "mov eip," => "jmp",
-  r"xor\W+(?<a>\w+),\W+(?P=a)" => s"xorclear \g<a>", r"nop." => "nop @_NOP"
 ]
 
 const dir_regexes = [
@@ -135,12 +138,10 @@ function number_op_pair(x)
 end
 
 function graph(asm, opcodes)
-  @show asm[1:1000]
   start = foldl(replace,
-    #=[map(partial(=>)(s" \g<a>"), dir_regexes) ;=# r_mods#=]=#,
+    [map(partial(=>)(s" \g<a> "), dir_regexes) ; r_mods],
     init= asm
   )
-  @show start[1:1000]
   bw_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
   partial(replace)(r"\ \ " => " ") |>
   partial(replace)(r"\," => ", ") |>
@@ -166,11 +167,12 @@ function graph(asm, opcodes)
   mov_shifting = Dict{AbstractString,AbstractString}()
   stack_refs = Stack{AbstractString}()
   from_stack = Set{AbstractString}()
+  h = Set{Int64}()
   jump_derive_eax = false
   jump_source = nothing
   jump_depth = 0
   start_segm = nothing
-  links_retn = run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_source, jump_depth, start_segm)
+  links_retn = run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, h, jump_derive_eax, jump_source, jump_depth, start_segm)
   return map(
     x -> Pair(map(
       number_op_pair,
@@ -180,7 +182,7 @@ function graph(asm, opcodes)
   )
 end
 
-function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_source, jump_depth, start_segm)
+function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, h, jump_derive_eax, jump_source, jump_depth, start_segm)
   basic_repr = begin
     if start_segm == nothing
       bw_repr
@@ -197,7 +199,13 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
     for full in basic_repr
       try
         i = full.second
-        if i[:op].first[1] == 'j' && jump_depth < 800
+	if jump_depth >= parse(Int64, ARGS[1])
+	  if length(ARGS) >= 2 && ARGS[2] == "debug"
+	    println("Stopping recursive fork, jump depth reached $jump_depth")
+	  end
+	  continue
+	end
+        if i[:op].first[1] == 'j'
           new_start_segm = full.first.first => begin
             if startswith(i[:gen], "0x")
               parse(Int64, i[:gen])
@@ -205,12 +213,16 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
               parse(Int64, i[:gen], base= 16)
             end
           end
-    println("Jump to $new_start_segm detected, forking recursion...")
+	  is_c = i[:op].second != "jmp"
+	  if new_start_segm in h
+	    continue
+	  end
+	  push!(h, new_start_segm)
           union!(
             links,
-            run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, i[:op].first != "jmp", i[:op], jump_depth + 1, new_start_segm)
+            run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, h, is_c, i[:op], jump_depth + 1, new_start_segm)
           )
-          if i[:op].first != "jmp" && haskey(op_sources, "eax")
+          if is_c && haskey(op_sources, "eax")
             push!(links, op_sources["eax"]=> i[:op])
           end
         end
@@ -229,8 +241,11 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
         elseif i[:op] == ("pop" => nothing)
           try
             push!(mov_shifting, i[:gen] => pop!(stack_refs))
-    catch _ end
+          catch _ end
         else
+	  if length(ARGS) >= 2 && ARGS[2] == "debug"
+	    println("Opcode $(i[:op]) entered...")
+	  end
           if i[:gen] in from_stack
             delete!(from_stack, i[:gen])
           end
@@ -261,6 +276,9 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
         end
         catch _ end
     end
+  end
+  if length(ARGS) >= 2 && ARGS[2] == "debug"
+  	println("Returning links, starting with $(links |> Iterators.peel).")
   end
   return links
 end
@@ -300,7 +318,7 @@ open("target.mmp", "a") do f
   write(f, "\n")
 end
 
-if length(ARGS) >= 1 && ARGS[1] == "debug"
+if length(ARGS) >= 2 && ARGS[2] == "debug"
   open("target.mmp") do f
     f |> read |> String |> println
   end
