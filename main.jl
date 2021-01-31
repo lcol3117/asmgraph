@@ -130,7 +130,7 @@ function graph(asm, opcodes)
   partial(replace)(r"\ \ " => " ") |> map_with(read_asm_line) |> filter_with(x ->
     !occursin("nop", x.second[:op])
   ) |> map_with(line ->
-    line,first => op_shift(line.second)
+    line.first => op_shift(line.second)
   ) |> map_with(line ->
     line.first => union(line.second, Dict(:op =>
       if mov_like(line.second[:op])
