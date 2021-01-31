@@ -220,6 +220,7 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
         end
         if jump_source != nothing
           push!(links, jump_source => i[:op])
+          println("linked jump_source $(jump_source) to $(i[:op])")
         end
         for j in i[:uses]
           exists = haskey(op_sources, get_or_id(mov_shifting, j))
