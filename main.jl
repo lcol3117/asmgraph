@@ -10,14 +10,23 @@ get_or_id(src, key) = haskey(src, key) ? src[key] : key
 Iterators.rest(itrq::Iterators.Rest, stateq) = Iterators.Rest(itrq.itr, stateq)
 
 function read_asm_line(text)
-  segm_text, item_split = text |> split_with(" ") |> filter_with(
-    x -> x != ""
-  ) |> Iterators.peel
-  segm_component = (
-    parse(Int64, segm_text[1:4], base= 16)
-  ) => (
-    parse(Int64, segm_text[5:8], base= 16)
-  )
+  segm_text, item_split, segm_component = try
+    segm_text, item_split = text |> split_with(" ") |> filter_with(
+      x -> x != ""
+    ) |> Iterators.peel
+    (
+      segm_text,
+      item_split,
+      (
+        parse(Int64, segm_text[1:4], base= 16)
+      ) => (
+        parse(Int64, segm_text[5:8], base= 16)
+      )
+    )
+  catch _
+    (nothing, nothing, -1 => -1)
+  end
+  @show segm_component
   try
     _, instr_split = Iterators.peel(item_split)
     op, args = Iterators.peel(instr_split)
@@ -26,7 +35,7 @@ function read_asm_line(text)
     instr_component = Dict(:op => op, :gen => gen, :uses => uses)
     return segm_component => instr_component
   catch _ 
-    return segm_component => Dict(:op => "nop", :gen => "@_NOP" :uses => ["@_NOP"])
+    return segm_component => Dict(:op => "nop", :gen => "@_NOP", :uses => ["@_NOP"])
   end
 end
 
@@ -54,12 +63,12 @@ function op_shift(s_line)
 end
 
 const r_mods = [
-  r"\Wal" => "eax", r"\Wah" => "eax", r"\Wax" => "eax", r"\Wrax" => "eax",
-  r"\Wbl" => "ebx", r"\Wbh" => "ebx", r"\Wbx" => "ebx", r"\Wrbx" => "ebx",
-  r"\Wcl" => "ecx", r"\Wch" => "ecx", r"\Wcx" => "ecx", r"\Wrcx" => "ecx",
-  r"\Wdl" => "edx", r"\Wdh" => "edx", r"\Wdx" => "edx", r"\Wrdx" => "edx",
-  r";.*\n" => "\n", "sysenter" => "syscall", r"\Wrsp" => "esp", r"\Wrbp" => "ebp",
-  r"\Wrip" => "eip", "syscall" => "int 0x80, eax, ebx, ecx, edx", "mov eip" => "jmp",
+  r"\Wal" => " eax", r"\Wah" => " eax", r"\Wax" => " eax", r"\Wrax" => " eax",
+  r"\Wbl" => " ebx", r"\Wbh" => " ebx", r"\Wbx" => " ebx", r"\Wrbx" => " ebx",
+  r"\Wcl" => " ecx", r"\Wch" => " ecx", r"\Wcx" => " ecx", r"\Wrcx" => " ecx",
+  r"\Wdl" => " edx", r"\Wdh" => " edx", r"\Wdx" => " edx", r"\Wrdx" => " edx",
+  r";.*\n" => "\n", "sysenter" => "syscall", r"\Wrsp" => " esp", r"\Wrbp" => " ebp",
+  r"\Wrip" => " eip", "syscall" => "int 0x80, eax, ebx, ecx, edx", "mov eip," => "jmp",
   r"xor\W+(?<a>\w+),\W+(?P=a)" => s"xorclear \g<a>", r"nop." => "nop @_NOP"
 ]
 
@@ -74,7 +83,8 @@ const dir_regexes = [
   r"\b(tbyte)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]",
   r"\b(real4)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]",
   r"\b(real8)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]",
-  r"\b(real10)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]"
+  r"\b(real10)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]",
+  r"\b(near)?[^\w\n]*(\w+)?[^\w\n]?\[(?<a>\w+).*\]"
 ]
 
 function reg_class(reg)
@@ -125,13 +135,15 @@ function number_op_pair(x)
 end
 
 function graph(asm, opcodes)
+  @show asm[1:1000]
   start = foldl(replace,
-    [map(partial(=>)(s" \g<a>"), dir_regexes) ; r_mods],
+    #=[map(partial(=>)(s" \g<a>"), dir_regexes) ;=# r_mods#=]=#,
     init= asm
   )
+  @show start[1:1000]
   bw_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
   partial(replace)(r"\ \ " => " ") |>
-  partial(replace)(r"\," => ",") |>
+  partial(replace)(r"\," => ", ") |>
   map_with(read_asm_line) |> filter_with(x ->
     !occursin("nop", x.second[:op])
   ) |> map_with(line ->
@@ -192,6 +204,7 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
             parse(Int64, i[:gen], base= 16)
           end
         end
+	println("Jump to $new_start_segm detected, forking recursion...")
         union!(
           links,
           run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, i[:op].first != "jmp", i[:op], jump_depth + 1, new_start_segm)
@@ -213,7 +226,9 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
           )
         end
       elseif i[:op] == ("pop" => nothing)
-        push!(mov_shifting, i[:gen] => pop!(stack_refs))
+        try
+          push!(mov_shifting, i[:gen] => pop!(stack_refs))
+	catch _ end
       else
         if i[:gen] in from_stack
           delete!(from_stack, i[:gen])
