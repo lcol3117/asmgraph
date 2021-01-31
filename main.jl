@@ -178,8 +178,7 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
   if bw_repr != nothing
     for full in basic_repr
       i = full.second
-      @show i[:op]
-      if i[:op][1] == 'j' && jump_depth < 800
+      if i[:op].first[1] == 'j' && jump_depth < 800
         new_start_segm = full.first.first => begin
           if startswith(i[:gen], "0x")
             parse(Int64, i[:gen])
@@ -187,13 +186,12 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
             parse(Int64, i[:gen], base= 16)
           end
         end
-        print("jumping with $(i[:op])")
         links = [
           links
-          run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, i[:op] != "jmp", i[:op], jump_depth + 1, new_start_segm)
+          run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, i[:op].first != "jmp", i[:op], jump_depth + 1, new_start_segm)
         ]
-        if i[:op] != "jmp"
-          push!(links, i[:op])
+        if i[:op].first != "jmp"
+          push!(links, get_or_id(op_sources, "eax") => i[:op])
         end
       end
       if i[:op] == ("mov" => nothing)
@@ -218,11 +216,10 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
           jump_derive_eax = false
         end
         if jump_derive_eax
-          push!(links, op_sources["eax"] => i[:op])
+          push!(links, get_or_id(op_sources, "eax"])=> i[:op])
         end
         if jump_source != nothing
           push!(links, jump_source => i[:op])
-          println("linked jump_source $(jump_source) to $(i[:op])")
         end
         for j in i[:uses]
           exists = haskey(op_sources, get_or_id(mov_shifting, j))
