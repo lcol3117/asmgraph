@@ -178,6 +178,7 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
   if bw_repr != nothing
     for full in basic_repr
       i = full.second
+      @show i[:op]
       if i[:op][1] == 'j' && jump_depth < 800
         new_start_segm = full.first.first => begin
           if startswith(i[:gen], "0x")
@@ -186,7 +187,7 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
             parse(Int64, i[:gen], base= 16)
           end
         end
-        @show i[:op]
+        print("jumping with $(i[:op])")
         links = [
           links
           run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, i[:op] != "jmp", i[:op], jump_depth + 1, new_start_segm)
