@@ -116,7 +116,7 @@ function graph(asm, opcodes)
     [map(partial(=>)(s" \g<a>"), dir_regexes) ; r_mods],
     init= asm
   )
-  asm_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
+  bw_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
   partial(replace)(r"\ \ " => " ") |> map_with(read_asm_line) |> filter_with(x ->
     !occursin("nop", x.second[:op])
   ) |> map_with(op_shift) |> map_with(line ->
@@ -139,17 +139,31 @@ function graph(asm, opcodes)
   from_stack = Set{AbstractString}()
   jump_derive_eax = false
   jump_depth = 0
-  start_segm = 0
-  return run_graphing(asm_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth, start_segm)
+  start_segm = nothing
+  return run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth, start_segm)
 end
 
-function run_graphing(asm_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth, start_segm)
-  basic_repr = ( i.second for i in asm_repr )
-  for i in basic_repr
+function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth, start_segm)
+  basic_repr = begin
+    if start_segm = nothing
+      bw_repr
+    else
+      bw_repr
+    end
+  end
+  for full in basic_repr
+    i = full.second
     if i[:op] in jump_opcode_ids && jump_depth < 800
+      new_start_segm = full.first.first => begin
+        if startswith(i[:gen], "0x")
+          parse(Int64, i[:gen])
+        else
+          parse(Int64, i[:gen], base= 16)
+        end
+      end
       links = [
         links
-        run_graphing(asm_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth + 1, i[:gen])
+        run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth + 1, new_start_segm)
       ]
     end
     if i[:op] == ("mov" => nothing)
