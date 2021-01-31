@@ -186,10 +186,10 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
             parse(Int64, i[:gen], base= 16)
           end
         end
-        links = [
-          links
+        union!(
+          links,
           run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, i[:op].first != "jmp", i[:op], jump_depth + 1, new_start_segm)
-        ]
+        )
         if i[:op].first != "jmp" && haskey(op_sources, "eax")
           push!(links, op_sources["eax"]=> i[:op])
         end
