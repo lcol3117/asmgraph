@@ -11,10 +11,18 @@ get_or_id(src, key) = haskey(src, key) ? src[key] : key
 Iterators.rest(itrq::Iterators.Rest, stateq) = Iterators.Rest(itrq.itr, stateq)
 
 function read_asm_line(text)
-  op, args = text |> lowercase |> split_with(" ") |> Iterators.peel
+  segm_text, item_split = text |> split_with(" ") |> Iterators.peel
+  _, instr_split = Iterators.peel(item_split)
+  op, args = Iterators.peel(instr_split)
   gen, unmod = args |> collect |> join |> split_with(",") |> Iterators.peel
   uses = [[gen] ; collect(unmod)]
-  return Dict(:op => op, :gen => gen, :uses => uses)
+  instr_component = Dict(:op => op, :gen => gen, :uses => uses)
+  segm_component = (
+    parse(Int64, segm_text[1:4], 16)
+  ) => (
+    parse(Int64, segm_text[5:8], 16)
+  )
+  return segm_component => instr_component
 end
 
 function opcode_index(opcode, opcodes)
@@ -46,7 +54,7 @@ const r_mods = [
   r"\Wcl" => "ecx", r"\Wch" => "ecx", r"\Wcx" => "ecx", r"\Wrcx" => "ecx",
   r"\Wdl" => "edx", r"\Wdh" => "edx", r"\Wdx" => "edx", r"\Wrdx" => "edx",
   r";.*\n" => "\n", "sysenter" => "syscall", r"\Wrsp" => "esp", r"\Wrbp" => "ebp",
-  r"\Wrip" => "eip", "syscall" => "int 0x80, eax, ebx, ecx, edx",
+  r"\Wrip" => "eip", "syscall" => "int 0x80, eax, ebx, ecx, edx", "mov eip" => "jmp"
   r"xor\W+(?<a>\w+),\W+(?P=a)" => s"xorclear \g<a>"
 ]
 
@@ -140,80 +148,88 @@ function graph(asm, opcodes)
   jump_derive_eax = false
   jump_depth = 0
   start_segm = nothing
-  return run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth, start_segm)
+  links_retn = run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth, start_segm)
+  return map(
+    x -> Pair(map(
+      number_op_pair,
+      x
+    )...),
+    collect(links_retn)
+  )
 end
 
 function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth, start_segm)
   basic_repr = begin
     if start_segm = nothing
       bw_repr
+    elseif !any(x -> x.first == start_segm, bw_repr)
+      nothing
     else
-      bw_repr
+      Iterators.dropwhile(
+        x -> x.first != start_segm,
+        bw_repr
+      )
     end
   end
-  for full in basic_repr
-    i = full.second
-    if i[:op] in jump_opcode_ids && jump_depth < 800
-      new_start_segm = full.first.first => begin
-        if startswith(i[:gen], "0x")
-          parse(Int64, i[:gen])
-        else
-          parse(Int64, i[:gen], base= 16)
-        end
-      end
-      links = [
-        links
-        run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth + 1, new_start_segm)
-      ]
-    end
-    if i[:op] == ("mov" => nothing)
-      push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
-    elseif i[:op] == ("push" => nothing)
-      push!(stack_refs, i[:gen])
-      if haskey(op_sources, get_or_id(mov_shifting, i[:gen]))
-        push!(op_sources,
-          "esp" => op_sources[get_or_id(mov_shifting, i[:gen])]
-        )
-        push!(op_sources,
-          "ebp" => op_sources[get_or_id(mov_shifting, i[:gen])]
-        )
-      end
-    elseif i[:op] == ("pop" => nothing)
-      push!(mov_shifting, i[:gen] => pop!(stack_refs))
-    else
-      if i[:gen] in from_stack
-        delete!(from_stack, i[:gen])
-      end
-      if i[:gen] == "eax"
-        jump_derive_eax = false
-      end
-      if jump_derive_eax
-        push!(links, op_sources["eax" => i[:op]])
-      end
-      for j in i[:uses]
-        exists = haskey(op_sources, get_or_id(mov_shifting, j))
-        if exists && op_sources[get_or_id(mov_shifting, j)] != i[:op]
-          if get_or_id(mov_shifting, j) in from_stack
-            if haskey(op_sources, "esp")
-              push!(links, op_sources["esp"] => i[:op])
-            end
-            if haskey(op_sources, "ebp")
-              push!(links, op_sources["ebp"] => i[:op])
-            end
+  if bw_repr != nothing
+    for full in basic_repr
+      i = full.second
+      if i[:op] in jump_opcode_ids && jump_depth < 800
+        new_start_segm = full.first.first => begin
+          if startswith(i[:gen], "0x")
+            parse(Int64, i[:gen])
+          else
+            parse(Int64, i[:gen], base= 16)
           end
-          push!(links, op_sources[get_or_id(mov_shifting, j)] => i[:op])
         end
+        links = [
+          links
+          run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth + 1, new_start_segm)
+        ]
       end
-      push!(op_sources, i[:gen] => i[:op])
+      if i[:op] == ("mov" => nothing)
+        push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
+      elseif i[:op] == ("push" => nothing)
+        push!(stack_refs, i[:gen])
+        if haskey(op_sources, get_or_id(mov_shifting, i[:gen]))
+          push!(op_sources,
+            "esp" => op_sources[get_or_id(mov_shifting, i[:gen])]
+          )
+          push!(op_sources,
+            "ebp" => op_sources[get_or_id(mov_shifting, i[:gen])]
+          )
+        end
+      elseif i[:op] == ("pop" => nothing)
+        push!(mov_shifting, i[:gen] => pop!(stack_refs))
+      else
+        if i[:gen] in from_stack
+          delete!(from_stack, i[:gen])
+        end
+        if i[:gen] == "eax"
+          jump_derive_eax = false
+        end
+        if jump_derive_eax
+          push!(links, op_sources["eax" => i[:op]])
+        end
+        for j in i[:uses]
+          exists = haskey(op_sources, get_or_id(mov_shifting, j))
+          if exists && op_sources[get_or_id(mov_shifting, j)] != i[:op]
+            if get_or_id(mov_shifting, j) in from_stack
+              if haskey(op_sources, "esp")
+                push!(links, op_sources["esp"] => i[:op])
+              end
+              if haskey(op_sources, "ebp")
+                push!(links, op_sources["ebp"] => i[:op])
+              end
+            end
+            push!(links, op_sources[get_or_id(mov_shifting, j)] => i[:op])
+          end
+        end
+        push!(op_sources, i[:gen] => i[:op])
+      end
     end
   end
-  return map(
-    x -> Pair(map(
-      number_op_pair,
-      x
-    )...),
-    collect(links)
-  )
+  return links
 end
 
 io_opcodes_csv = open("opcodes.csv")
