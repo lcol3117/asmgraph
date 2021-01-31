@@ -93,9 +93,9 @@ function reg_class(reg)
       2
     elseif reg in instr_regs
       3
-    elseif match(r"^0x.*$", reg)
+    elseif startswith(reg, "0x")
       4
-    elseif match(r"^\d+", reg)
+    elseif occursin(r"^\d+", reg)
       5
     else
       6
