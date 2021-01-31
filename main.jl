@@ -192,6 +192,7 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
         ]
         if i[:op] != "jmp"
           push!(links, i[:op])
+        end
       end
       if i[:op] == ("mov" => nothing)
         push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
