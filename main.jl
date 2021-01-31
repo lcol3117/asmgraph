@@ -190,8 +190,8 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
           links
           run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, i[:op].first != "jmp", i[:op], jump_depth + 1, new_start_segm)
         ]
-        if i[:op].first != "jmp"
-          push!(links, get_or_id(op_sources, "eax") => i[:op])
+        if i[:op].first != "jmp" && haskey(op_sources, "eax")
+          push!(links, op_sources["eax"]=> i[:op])
         end
       end
       if i[:op] == ("mov" => nothing)
