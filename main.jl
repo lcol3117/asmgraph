@@ -186,6 +186,7 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
             parse(Int64, i[:gen], base= 16)
           end
         end
+        @show i[:op]
         links = [
           links
           run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, i[:op] != "jmp", i[:op], jump_depth + 1, new_start_segm)
