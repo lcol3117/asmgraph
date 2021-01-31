@@ -25,7 +25,7 @@ function read_asm_line(text)
     uses = [[gen] ; collect(unmod)]
     instr_component = Dict(:op => op, :gen => gen, :uses => uses)
     return segm_component => instr_component
-  catch _
+  catch _ 
     return segm_component => Dict(:op => "nop", :gen => "@_NOP" :uses => ["@_NOP"])
   end
 end
@@ -130,7 +130,9 @@ function graph(asm, opcodes)
     init= asm
   )
   bw_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
-  partial(replace)(r"\ \ " => " ") |> map_with(read_asm_line) |> filter_with(x ->
+  partial(replace)(r"\ \ " => " ") |>
+  partial(replace)(r"\," => ",") |>
+  map_with(read_asm_line) |> filter_with(x ->
     !occursin("nop", x.second[:op])
   ) |> map_with(line ->
     line.first => op_shift(line.second)
