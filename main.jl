@@ -114,21 +114,21 @@ end
 function graph(asm, opcodes)
   start = foldl(replace,
     [map(partial(=>)(s" \g<a>"), dir_regexes) ; r_mods],
-    init=asm
+    init= asm
   )
-  basic_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
+  asm_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
   partial(replace)(r"\ \ " => " ") |> map_with(read_asm_line) |> filter_with(x ->
-    !occursin("nop", x[:op])
+    !occursin("nop", x.second[:op])
   ) |> map_with(op_shift) |> map_with(line ->
-    union(line, Dict(:op =>
-      if mov_like(line[:op])
+    line.first => union(line.second, Dict(:op =>
+      if mov_like(line.second[:op])
         "mov" => nothing
-      elseif line[:op] == "push"
+      elseif line.second[:op] == "push"
         "push" => nothing
-      elseif line[:op] == "pop"
+      elseif line.second[:op] == "pop"
         "pop" => nothing
       else
-        line[:op] => line[:gen]
+        line.second[:op] => line.second[:gen]
       end
     )) |> splat(Dict)
   )
@@ -137,11 +137,21 @@ function graph(asm, opcodes)
   mov_shifting = Dict{AbstractString,AbstractString}()
   stack_refs = Stack{AbstractString}()
   from_stack = Set{AbstractString}()
-  return run_graphing(basic_repr, links, op_sources, mov_shifting, stack_refs, from_stack)
+  jump_derive_eax = false
+  jump_depth = 0
+  start_segm = 0
+  return run_graphing(asm_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth, start_segm)
 end
 
-function run_graphing(basic_repr, links, op_sources, mov_shifting, stack_refs, from_stack)
+function run_graphing(asm_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth, start_segm)
+  basic_repr = ( i.second for i in asm_repr )
   for i in basic_repr
+    if i[:op] in jump_opcode_ids && jump_depth < 800
+      links = [
+        links
+        run_graphing(asm_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth + 1, i[:gen])
+      ]
+    end
     if i[:op] == ("mov" => nothing)
       push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
     elseif i[:op] == ("push" => nothing)
@@ -156,8 +166,6 @@ function run_graphing(basic_repr, links, op_sources, mov_shifting, stack_refs, f
       end
     elseif i[:op] == ("pop" => nothing)
       push!(mov_shifting, i[:gen] => pop!(stack_refs))
-    elseif i[:op] in jump_op_ids
-      #??
     else
       if i[:gen] in from_stack
         delete!(from_stack, i[:gen])
