@@ -13,17 +13,23 @@ function read_asm_line(text)
   segm_text, item_split = text |> split_with(" ") |> filter_with(
     x -> x != ""
   ) |> Iterators.peel
-  _, instr_split = Iterators.peel(item_split)
-  op, args = Iterators.peel(instr_split)
-  gen, unmod = args |> collect |> join |> split_with(",") |> Iterators.peel
-  uses = [[gen] ; collect(unmod)]
-  instr_component = Dict(:op => op, :gen => gen, :uses => uses)
   segm_component = (
     parse(Int64, segm_text[1:4], base= 16)
   ) => (
     parse(Int64, segm_text[5:8], base= 16)
   )
-  return segm_component => instr_component
+  try
+    _, instr_split = Iterators.peel(item_split)
+    op, args = Iterators.peel(instr_split)
+    gen, unmod = args |> collect |> join |> split_with(",") |> Iterators.peel
+    uses = [[gen] ; collect(unmod)]
+    instr_component = Dict(:op => op, :gen => gen, :uses => uses)
+    return segm_component => instr_component
+  catch e
+    if isa(e, BoundsError)
+      return segm_component => Dict(:op => op, :gen => "@_NOP" :uses => ["@_NOP"])
+    end
+  end
 end
 
 function opcode_index(opcode, opcodes)
@@ -56,7 +62,7 @@ const r_mods = [
   r"\Wdl" => "edx", r"\Wdh" => "edx", r"\Wdx" => "edx", r"\Wrdx" => "edx",
   r";.*\n" => "\n", "sysenter" => "syscall", r"\Wrsp" => "esp", r"\Wrbp" => "ebp",
   r"\Wrip" => "eip", "syscall" => "int 0x80, eax, ebx, ecx, edx", "mov eip" => "jmp",
-  r"xor\W+(?<a>\w+),\W+(?P=a)" => s"xorclear \g<a>"
+  r"xor\W+(?<a>\w+),\W+(?P=a)" => s"xorclear \g<a>", r"nop." => "nop @_NOP"
 ]
 
 const dir_regexes = [
