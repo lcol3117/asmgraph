@@ -195,69 +195,71 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
   end
   if bw_repr != nothing
     for full in basic_repr
-      i = full.second
-      if i[:op].first[1] == 'j' && jump_depth < 800
-        new_start_segm = full.first.first => begin
-          if startswith(i[:gen], "0x")
-            parse(Int64, i[:gen])
-          else
-            parse(Int64, i[:gen], base= 16)
-          end
-        end
-	println("Jump to $new_start_segm detected, forking recursion...")
-        union!(
-          links,
-          run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, i[:op].first != "jmp", i[:op], jump_depth + 1, new_start_segm)
-        )
-        if i[:op].first != "jmp" && haskey(op_sources, "eax")
-          push!(links, op_sources["eax"]=> i[:op])
-        end
-      end
-      if i[:op] == ("mov" => nothing)
-        push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
-      elseif i[:op] == ("push" => nothing)
-        push!(stack_refs, i[:gen])
-        if haskey(op_sources, get_or_id(mov_shifting, i[:gen]))
-          push!(op_sources,
-            "esp" => op_sources[get_or_id(mov_shifting, i[:gen])]
-          )
-          push!(op_sources,
-            "ebp" => op_sources[get_or_id(mov_shifting, i[:gen])]
-          )
-        end
-      elseif i[:op] == ("pop" => nothing)
-        try
-          push!(mov_shifting, i[:gen] => pop!(stack_refs))
-	catch _ end
-      else
-        if i[:gen] in from_stack
-          delete!(from_stack, i[:gen])
-        end
-        if i[:gen] == "eax"
-          jump_derive_eax = false
-        end
-        if jump_derive_eax
-          push!(links, get_or_id(op_sources, "eax") => i[:op])
-        end
-        if jump_source != nothing
-          push!(links, jump_source => i[:op])
-        end
-        for j in i[:uses]
-          exists = haskey(op_sources, get_or_id(mov_shifting, j))
-          if exists && op_sources[get_or_id(mov_shifting, j)] != i[:op]
-            if get_or_id(mov_shifting, j) in from_stack
-              if haskey(op_sources, "esp")
-                push!(links, op_sources["esp"] => i[:op])
-              end
-              if haskey(op_sources, "ebp")
-                push!(links, op_sources["ebp"] => i[:op])
-              end
+      try
+        i = full.second
+        if i[:op].first[1] == 'j' && jump_depth < 800
+          new_start_segm = full.first.first => begin
+            if startswith(i[:gen], "0x")
+              parse(Int64, i[:gen])
+            else
+              parse(Int64, i[:gen], base= 16)
             end
-            push!(links, op_sources[get_or_id(mov_shifting, j)] => i[:op])
+          end
+    println("Jump to $new_start_segm detected, forking recursion...")
+          union!(
+            links,
+            run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, i[:op].first != "jmp", i[:op], jump_depth + 1, new_start_segm)
+          )
+          if i[:op].first != "jmp" && haskey(op_sources, "eax")
+            push!(links, op_sources["eax"]=> i[:op])
           end
         end
-        push!(op_sources, i[:gen] => i[:op])
-      end
+        if i[:op] == ("mov" => nothing)
+          push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
+        elseif i[:op] == ("push" => nothing)
+          push!(stack_refs, i[:gen])
+          if haskey(op_sources, get_or_id(mov_shifting, i[:gen]))
+            push!(op_sources,
+              "esp" => op_sources[get_or_id(mov_shifting, i[:gen])]
+            )
+            push!(op_sources,
+              "ebp" => op_sources[get_or_id(mov_shifting, i[:gen])]
+            )
+          end
+        elseif i[:op] == ("pop" => nothing)
+          try
+            push!(mov_shifting, i[:gen] => pop!(stack_refs))
+    catch _ end
+        else
+          if i[:gen] in from_stack
+            delete!(from_stack, i[:gen])
+          end
+          if i[:gen] == "eax"
+            jump_derive_eax = false
+          end
+          if jump_derive_eax
+            push!(links, get_or_id(op_sources, "eax") => i[:op])
+          end
+          if jump_source != nothing
+            push!(links, jump_source => i[:op])
+          end
+          for j in i[:uses]
+            exists = haskey(op_sources, get_or_id(mov_shifting, j))
+            if exists && op_sources[get_or_id(mov_shifting, j)] != i[:op]
+              if get_or_id(mov_shifting, j) in from_stack
+                if haskey(op_sources, "esp")
+                  push!(links, op_sources["esp"] => i[:op])
+                end
+                if haskey(op_sources, "ebp")
+                  push!(links, op_sources["ebp"] => i[:op])
+                end
+              end
+              push!(links, op_sources[get_or_id(mov_shifting, j)] => i[:op])
+            end
+          end
+          push!(op_sources, i[:gen] => i[:op])
+        end
+        catch _ end
     end
   end
   return links
