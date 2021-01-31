@@ -1,6 +1,5 @@
-import MsgPack
-
 using DataStructures
+import MsgPack
 
 partial(fq) = aq -> xq -> fq(xq, aq)
 splat(fq) = xq -> fq(xq...)
