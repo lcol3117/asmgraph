@@ -137,6 +137,10 @@ function graph(asm, opcodes)
   mov_shifting = Dict{AbstractString,AbstractString}()
   stack_refs = Stack{AbstractString}()
   from_stack = Set{AbstractString}()
+  return run_graphing(basic_repr, links, op_sources, mov_shifting, stack_refs, from_stack)
+end
+
+function run_graphing(basic_repr, links, op_sources, mov_shifting, stack_refs, from_stack)
   for i in basic_repr
     if i[:op] == ("mov" => nothing)
       push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
@@ -152,9 +156,17 @@ function graph(asm, opcodes)
       end
     elseif i[:op] == ("pop" => nothing)
       push!(mov_shifting, i[:gen] => pop!(stack_refs))
+    elseif i[:op] in jump_op_ids
+      #??
     else
       if i[:gen] in from_stack
         delete!(from_stack, i[:gen])
+      end
+      if i[:gen] == "eax"
+        jump_derive_eax = false
+      end
+      if jump_derive_eax
+        push!(links, op_sources["eax" => i[:op]])
       end
       for j in i[:uses]
         exists = haskey(op_sources, get_or_id(mov_shifting, j))
