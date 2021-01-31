@@ -178,7 +178,7 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
   if bw_repr != nothing
     for full in basic_repr
       i = full.second
-      if i[:op] in jump_opcode_ids && jump_depth < 800
+      if i[:op][1] == 'j' && jump_depth < 800
         new_start_segm = full.first.first => begin
           if startswith(i[:gen], "0x")
             parse(Int64, i[:gen])
