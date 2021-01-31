@@ -149,9 +149,10 @@ function graph(asm, opcodes)
   stack_refs = Stack{AbstractString}()
   from_stack = Set{AbstractString}()
   jump_derive_eax = false
+  jump_source = nothing
   jump_depth = 0
   start_segm = nothing
-  links_retn = run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth, start_segm)
+  links_retn = run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_source, jump_depth, start_segm)
   return map(
     x -> Pair(map(
       number_op_pair,
@@ -161,7 +162,7 @@ function graph(asm, opcodes)
   )
 end
 
-function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth, start_segm)
+function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_source, jump_depth, start_segm)
   basic_repr = begin
     if start_segm == nothing
       bw_repr
@@ -187,8 +188,10 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
         end
         links = [
           links
-          run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth + 1, new_start_segm)
+          run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, i[:op] != "jmp", i[:op], jump_depth + 1, new_start_segm)
         ]
+        if i[:op] != "jmp"
+          push!(links, i[:op])
       end
       if i[:op] == ("mov" => nothing)
         push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
@@ -212,7 +215,10 @@ function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from
           jump_derive_eax = false
         end
         if jump_derive_eax
-          push!(links, op_sources["eax" => i[:op]])
+          push!(links, op_sources["eax"] => i[:op])
+        end
+        if jump_source != nothing
+          push!(links, jump_source => i[:op])
         end
         for j in i[:uses]
           exists = haskey(op_sources, get_or_id(mov_shifting, j))
