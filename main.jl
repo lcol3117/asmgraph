@@ -11,7 +11,9 @@ get_or_id(src, key) = haskey(src, key) ? src[key] : key
 Iterators.rest(itrq::Iterators.Rest, stateq) = Iterators.Rest(itrq.itr, stateq)
 
 function read_asm_line(text)
-  segm_text, item_split = text |> split_with(" ") |> Iterators.peel
+  segm_text, item_split = text |> split_with(" ") |> filter_with(
+    x -> x != ""
+  ) |> Iterators.peel
   _, instr_split = Iterators.peel(item_split)
   op, args = Iterators.peel(instr_split)
   gen, unmod = args |> collect |> join |> split_with(",") |> Iterators.peel
@@ -127,7 +129,9 @@ function graph(asm, opcodes)
   bw_repr = start |> split_with("\n") |> map_with(strip) |> filter_with(x -> x != "") |>
   partial(replace)(r"\ \ " => " ") |> map_with(read_asm_line) |> filter_with(x ->
     !occursin("nop", x.second[:op])
-  ) |> map_with(op_shift) |> map_with(line ->
+  ) |> map_with(line ->
+    line,first => op_shift(line.second)
+  ) |> map_with(line ->
     line.first => union(line.second, Dict(:op =>
       if mov_like(line.second[:op])
         "mov" => nothing
