@@ -160,7 +160,7 @@ end
 
 function run_graphing(bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack, jump_derive_eax, jump_depth, start_segm)
   basic_repr = begin
-    if start_segm = nothing
+    if start_segm == nothing
       bw_repr
     elseif !any(x -> x.first == start_segm, bw_repr)
       nothing
