@@ -27,7 +27,7 @@ function read_asm_line(text)
     return segm_component => instr_component
   catch e
     if isa(e, BoundsError)
-      return segm_component => Dict(:op => op, :gen => "@_NOP" :uses => ["@_NOP"])
+      return segm_component => Dict(:op => "nop", :gen => "@_NOP" :uses => ["@_NOP"])
     end
   end
 end
