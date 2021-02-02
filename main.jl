@@ -327,7 +327,7 @@ function modified_msgpack_pack(x)
 end
 
 function graph_modified_msgpack(asm, opcodes)
-  return graph(asm, opcodes) |> modified_msgpack_pack
+  return graph(asm, opcodes) |> @show |> modified_msgpack_pack
 end
 
 io_asm = open("source.asm")
