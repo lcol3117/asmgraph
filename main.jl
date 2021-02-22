@@ -172,6 +172,7 @@ function graph(asm, opcodes)
   mov_shifting = Dict{AbstractString,AbstractString}()
   stack_refs = Stack{AbstractString}()
   from_stack = Set{AbstractString}()
+  call_stack = Stack{UInt64}()
   h = Set{Int64}()
   jump_derive_eax = false
   jump_source = nothing
@@ -179,7 +180,7 @@ function graph(asm, opcodes)
   start_segm = nothing
   links_retn = run_graphing(
     bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack,
-    h, jump_derive_eax, jump_source, jump_depth, start_segm
+    h, jump_derive_eax, jump_source, jump_depth, start_segm, call_stack
   )
   return map(
     x -> Pair(map(
@@ -192,7 +193,7 @@ end
 
 @everywhere function run_graphing(
   bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack,
-  h, jump_derive_eax, jump_source, jump_depth, start_segm
+  h, jump_derive_eax, jump_source, jump_depth, start_segm, call_stack
 )
   fork_local = Set{Future}()
   basic_repr = begin
@@ -208,9 +209,11 @@ end
     end
   end
   if bw_repr != nothing
+    index_acc_nbasis = -1
     for full in basic_repr
       try
         i = full.second
+        inc_acc_nbasis += 1
         if instr_reg(i[:op].first) || instr_reg(i[:op].second)
           continue
         end
@@ -237,12 +240,47 @@ end
             fork_local,
             @spawnat :any run_graphing(
               bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack,
-              h, is_c, i[:op], jump_depth + 1, new_start_segm
+              h, is_c, i[:op], jump_depth + 1, new_start_segm, call_stack
             )
           )
           if is_c && haskey(op_sources, "eax")
             push!(links, op_sources["eax"]=> i[:op])
           end
+        end
+        if occursin("call", i[:op].first)
+          new_start_segm = full.first.first => begin
+            if startswith(i[:gen], "0x")
+              parse(Int64, i[:gen])
+            else
+              parse(Int64, i[:gen], base= 16)
+            end
+          end
+      	  is_c = i[:op].second != "call"
+      	  if new_start_segm in h
+      	    continue
+      	  end
+      	  push!(h, new_start_segm)
+          push!(call_stack, UInt64(start_segm + index_acc_nbasis))
+          union!(
+            fork_local,
+            @spawnat :any run_graphing(
+              bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack,
+              h, is_c, i[:op], jump_depth + 1, new_start_segm, call_stack
+            )
+          )
+          if is_c && haskey(op_sources, "eax")
+            push!(links, op_sources["eax"]=> i[:op])
+          end
+        end
+        if occursin("ret", i[:op].first) && (length(i[:op].first) <= 6)
+          retn_addr = pop!(call_stack)
+          return union!(
+            fork_local,
+            @spawnat :any run_graphing(
+              bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack,
+              h, is_c, i[:op], jump_depth + 1, retn_addr, call_stack
+            )
+          )
         end
         if i[:op] == ("mov" => nothing)
           push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
