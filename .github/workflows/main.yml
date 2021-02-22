@@ -33,4 +33,4 @@ jobs:
       
       # Runs a single command using the runners shell
       - name: Run code
-        run: julia main.jl debug
+        run: julia main.jl 10 debug
