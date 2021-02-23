@@ -28,19 +28,23 @@ function read_asm_line(text)
   catch _
     (nothing, nothing, -1 => -1)
   end
-  if length(ARGS) >= 2 && ARGS[2] == "debug"
-    @show segm_component
-  end
-  try
+  __retn_target = try
     _, instr_split = Iterators.peel(item_split)
     op, args = Iterators.peel(instr_split)
-    gen, unmod = args |> collect |> join |> split_with(",") |> Iterators.peel
+    gen, unmod = args |> (
+      "," |> split_with |> map_with
+    ) |> Iterators.flatten |> Iterators.peel
+    Dict(:op => op, :__args => args, :gen => gen, :__unmod => unmod) |> println
     uses = [[gen] ; collect(unmod)]
     instr_component = Dict(:op => op, :gen => gen, :uses => uses)
-    return segm_component => instr_component
-  catch _ 
-    return segm_component => Dict(:op => "nop", :gen => "@_NOP", :uses => ["@_NOP"])
+    segm_component => instr_component
+  catch _
+    segm_component => Dict(:op => "nop", :gen => "@_NOP", :uses => ["@_NOP"])
   end
+  if length(ARGS) >= 2 && ARGS[2] == "debug"
+    println("$segm_component -> $item_split -> $(__retn_target.second)")
+  end
+  return __retn_target
 end
 
 function opcode_index(opcode, opcodes)
@@ -172,6 +176,7 @@ function graph(asm, opcodes)
   mov_shifting = Dict{AbstractString,AbstractString}()
   stack_refs = Stack{AbstractString}()
   from_stack = Set{AbstractString}()
+  call_stack = Stack{Int64}()
   h = Set{Int64}()
   jump_derive_eax = false
   jump_source = nothing
@@ -179,20 +184,20 @@ function graph(asm, opcodes)
   start_segm = nothing
   links_retn = run_graphing(
     bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack,
-    h, jump_derive_eax, jump_source, jump_depth, start_segm
+    h, jump_derive_eax, jump_source, jump_depth, start_segm, call_stack
   )
-  return map(
+  return filter(x -> (x.second != nothing) && (x.first != nothing), map(
     x -> Pair(map(
-      number_op_pair,
+      x -> x.second == "" ? nothing : number_op_pair(x),
       x
     )...),
     collect(links_retn)
-  )
+  ))
 end
 
 @everywhere function run_graphing(
   bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack,
-  h, jump_derive_eax, jump_source, jump_depth, start_segm
+  h, jump_derive_eax, jump_source, jump_depth, start_segm, call_stack
 )
   fork_local = Set{Future}()
   basic_repr = begin
@@ -237,12 +242,47 @@ end
             fork_local,
             @spawnat :any run_graphing(
               bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack,
-              h, is_c, i[:op], jump_depth + 1, new_start_segm
+              h, is_c, i[:op], jump_depth + 1, new_start_segm, call_stack
             )
           )
           if is_c && haskey(op_sources, "eax")
             push!(links, op_sources["eax"]=> i[:op])
           end
+        end
+        if occursin("call", i[:op].first)
+          new_start_segm = full.first.first => begin
+            if startswith(i[:gen], "0x")
+              parse(Int64, i[:gen])
+            else
+              parse(Int64, i[:gen], base= 16)
+            end
+          end
+      	  is_c = i[:op].second != "call"
+      	  if new_start_segm in h
+      	    continue
+      	  end
+      	  push!(h, new_start_segm)
+          push!(call_stack, new_start_segm)
+          union!(
+            fork_local,
+            @spawnat :any run_graphing(
+              bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack,
+              h, is_c, i[:op], jump_depth + 1, new_start_segm, call_stack
+            )
+          )
+          if is_c && haskey(op_sources, "eax")
+            push!(links, op_sources["eax"] => i[:op])
+          end
+        end
+        if occursin("ret", i[:op].first * i[:op].second)
+          retn_addr = pop!(call_stack)
+          union!(
+            fork_local,
+            run_graphing(
+              bw_repr, links, op_sources, mov_shifting, stack_refs, from_stack,
+              h, is_c, i[:op], jump_depth + 1, new_start_segm, call_stack
+            )
+          )
         end
         if i[:op] == ("mov" => nothing)
           push!(mov_shifting, i[:gen] => get_or_id(mov_shifting, i[:uses][1]))
@@ -294,9 +334,6 @@ end
         end
         catch _ end
     end
-  end
-  if length(ARGS) >= 2 && ARGS[2] == "debug"
-  	println("Returning links, starting with $(links |> Iterators.peel).")
   end
   return union(
     links,
