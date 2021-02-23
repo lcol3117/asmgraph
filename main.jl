@@ -34,7 +34,9 @@ function read_asm_line(text)
     gen, unmod = args |> (
       "," |> split_with |> map_with
     ) |> Iterators.flatten |> Iterators.peel
-    Dict(:op => op, :__args => args, :gen => gen, :__unmod => unmod) |> println
+    if length(ARGS) >= 2 && ARGS[2] == "debug"
+      Dict(:op => op, :__args => args, :gen => gen, :__unmod => unmod) |> println
+    end
     uses = [[gen] ; collect(unmod)]
     instr_component = Dict(:op => op, :gen => gen, :uses => uses)
     segm_component => instr_component
