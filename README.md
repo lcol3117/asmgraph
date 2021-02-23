@@ -1,6 +1,4 @@
 # asmgraph
 Converts assembly to a graph of operations. Written in Julia. 
 
-`graph(asm_string, opcodes_index_dict)` -> `Dict(src => target)`
-
-`String, Dict{String,Number}` -> `Dict{Number,Number}`
+Appends the result (compressed using a variant of MessagePack) to `target.mmp`. 
